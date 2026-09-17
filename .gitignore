@@ -1,0 +1,39 @@
+/data/
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+.venv/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+*.tsbuildinfo
+.DS_Store
+
+build/
+
+# Local tooling
+/.kilo/
+
+# Additional Python/cache artifacts
+venv/
+*.py[cod]
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+.eslintcache
+
+# Editor/OS temporary files
+*.swp
+*.swo
+*~
+._*

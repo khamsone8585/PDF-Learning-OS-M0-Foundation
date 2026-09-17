@@ -1,0 +1,11 @@
+:root { font-family: system-ui, sans-serif; color: #1c302b; background: #f4f6f2; font-synthesis: none; line-height: 1.6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 760px; margin: 12vh auto; padding: 24px; }
+h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.1; margin: 12px 0; letter-spacing: -0.04em; }
+h2 { font-size: 1.15rem; }
+.eyebrow { font-weight: 600; color: #486255; }
+section { margin-top: 40px; padding: 24px; background: #fff; border: 1px solid #d5ded5; border-radius: 12px; }
+.status { margin-bottom: 0; }
+.ready { color: #24613b; }
+.unavailable { color: #8e351f; }
