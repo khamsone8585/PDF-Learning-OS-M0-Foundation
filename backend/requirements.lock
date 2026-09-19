@@ -21,3 +21,10 @@ starlette==1.6.0
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 uvicorn==0.53.0
+
+# M1 additions (existing locked versions preserved).
+alembic==1.20.0
+PyMuPDF==1.28.2
+python-multipart==0.0.32
+Mako==1.4.1
+MarkupSafe==3.0.3

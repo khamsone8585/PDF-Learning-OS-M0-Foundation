@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Library from '../features/library/Library'
 import { checkHealth } from '../api/health'
 
 type HealthState = 'loading' | 'ready' | 'unavailable'
@@ -39,6 +40,7 @@ export default function App() {
         <h2 id="connection-heading">Local connection</h2>
         <p role="status" className={`status ${health}`}>{messages[health]}</p>
       </section>
+      <Library />
     </main>
   )
 }

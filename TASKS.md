@@ -8,7 +8,7 @@ Status: TODO / PLANNED / IN PROGRESS / BLOCKED / READY FOR TEST / DONE
 Create React+TS+Vite frontend, FastAPI backend, SQLite, frontend tests, backend tests, and `GET /health` integration. No AI or PDF feature yet.
 
 ## M1 — Local PDF Library
-**Status:** TODO
+**Status:** DONE
 
 Import, save, list, open details, and delete local PDFs.
 
@@ -67,7 +67,7 @@ Export PROFILE.md, STUDY_PLAN.md, CHAPTER_NOTES.md, PROGRESS.md, optional TEACHI
 
 Use 3 real technical PDFs and one learning goal for 2–4 weeks. Evaluate extraction, learning-path quality, explanations, recall, mastery, and friction. Only after this consider RAG/embeddings.
 
-## Active Task
+## Historical M0 task
 
 Task: M0 — Repository Foundation
 Milestone: M0
@@ -276,7 +276,7 @@ M1 remains TODO. Stop after M0 TEST.
 
 Milestone: Repository maintenance (between M0 and M1)
 Mode: CODE
-Status: READY FOR TEST
+Status: DONE
 Approval: User approved the Git Baseline Before M1 plan and its local commit on 2026-09-17.
 
 Goal: establish one local baseline commit of exactly the approved 38 project files on main.
@@ -288,3 +288,125 @@ No application recertification required by this approved maintenance plan. M0 st
 
 Pre-commit verification: Git initialized on main; 23 ignore probes passed; all 38 approved files (including both .env.example files) remain trackable; unignored inventory exactly matches the manifest. Credential-pattern scan found no matches. Only .gitignore and TASKS.md were edited; no runtime files removed.
 Final commit/tree/status verification is performed after creating the baseline and reported in the task response. This CODE record does not change M0 certification or mark a new product milestone DONE.
+
+
+Repository-maintenance verification: baseline `6c4c168` was committed and pushed to origin/main at https://github.com/khamsone8585/PDF-Learning-OS-M0-Foundation.git. Main tracks origin/main; clean tree verified before M1. Earlier no-remote statements describe the original local-only scope.
+
+## Active Task
+
+Task: M1 — Local PDF Library
+Milestone: M1
+Mode: TEST
+Status: DONE
+Approval: User explicitly approved the complete M1 plan and implementation on 2026-09-18.
+
+Goal: FR-001–005 only: import, preserve locally, list, inspect bibliographic details, and confirm deletion.
+
+Approved decisions: books UUID schema with title, normalized original filename, nullable author/edition/year, positive page count, UTC import time, unique SHA-256 and bounded byte size. Paths derive from UUID. Optional import metadata overrides PDF title/author; no publication-date inference. Explicit Alembic initial migration, never create_all/startup migrations. Add only Alembic, PyMuPDF and python-multipart. 100 MiB PDF / 101 MiB request limits. Reject invalid, empty, repaired and encrypted PDFs; inspect pages without text/TOC/rendering. Reject duplicate bytes with existing ID; allow different bytes sharing a name.
+
+Storage: books/<uuid>/original.pdf, .staging/<uuid>, .trash/<uuid> under configured data directory. Single-process flock plus serialized operations; no user-controlled paths, symlinks or overwrite. Stage/hash/inspect, insert, move, commit; compensate uncertain outcomes using a fresh DB read. Delete through trash; restore if record remains, clean if committed. Startup reconciliation never operates without readable current schema. Report cleanup failures and block unsafe mutations.
+
+Interfaces: POST /books multipart plus optional title/author/edition/year -> 201; GET /books -> books array; GET /books/{uuid} -> book; DELETE -> 204. Safe structured errors, duplicate 409, validation 422, size 413, media 415, malformed multipart 400, missing 404, storage/setup 503. Responses omit hash/path and include file_available. Existing health contract preserved.
+
+Frontend: accessible file/metadata form, bounded requests, loading/errors/retry, list, details, duplicate navigation, explicit inline delete confirmation, missing-file and unknown-outcome recovery. No optimistic deletion or automatic mutation retry.
+
+Files: backend config/startup/dependencies, models/schemas/library routes/services/storage/PDF inspector, Alembic environment/revision, tests; frontend library API/components/tests and app/styles; ARCHITECTURE.md, README.md, TASKS.md. CHANGELOG.md unchanged in CODE.
+
+Implementation order: dependencies/schema/locking; temporary migration fixtures; inspection/storage/library service; routes/body limits; frontend; recovery tests; documentation and checks.
+
+Acceptance criteria:
+1. Valid <=100 MiB PDF creates one record and byte-identical original.
+2. Metadata precedence and null unknown edition/year are correct.
+3. Records/files survive restart.
+4. Identical bytes return 409 without duplicate storage; same-name different bytes succeed.
+5. Invalid/empty/repaired/encrypted/oversized/unreadable inputs leave no visible partial books.
+6. List/details schema, ordering and not-found contracts pass.
+7. Names/IDs cannot escape storage or overwrite files.
+8. Confirmed delete removes owned data; cancel does nothing; missing-file delete succeeds.
+9. Failure/crash recovery follows committed DB state and reports cleanup failures.
+10. Explicit migration supports fresh/M0 DBs; absent schema gives setup error.
+11. UI library flows are keyboard accessible.
+12. Tests isolate DBs, storage, generated PDFs and upload spools in temporary paths.
+13. Existing health and frontend lint/test/typecheck/build plus pytest pass.
+14. No M2 behavior or infrastructure.
+
+Test plan: migration idempotence/constraints; metadata/size boundaries; invalid PDFs; duplicates/concurrency; path and symlink safety; restart; import/delete fault injection and recovery; UI loading/errors/confirmation/focus/stale responses/timeouts. Formal TEST additionally runs browser lifecycle against a temporary library.
+
+Risks: SQLite/filesystem require compensation, disk failure can defer cleanup, structural validation cannot guarantee later extraction, strict PDF rejection, single-process serving, unknown network outcomes. Out of scope: M2 extraction/TOC/OCR/AI, viewer/download, editing/search/bulk/pagination, cloud/auth/multiworker.
+
+CODE verification — 2026-09-18:
+- Implemented the approved FR-001–005 schema/migration, guarded UUID storage, structural PDF inspection, bounded multipart upload, duplicate policy, import/delete compensation and startup recovery, thin API and accessible library UI.
+- Added Alembic 1.20.0, PyMuPDF 1.28.2, python-multipart 0.0.32 and their Mako/MarkupSafe dependencies to the existing Python 3.14.5 virtual environment and lockfile. Existing locked versions preserved; pip check passed. No frontend dependency changes.
+- Backend: 64 tests passed (including existing 13 M0 tests). Final command from repository root: `backend/.venv/bin/pytest -q -c backend/pyproject.toml backend/tests`. Standard backend-directory pytest also passed during development.
+- Frontend: `npm run test -- --run` passed, 28 tests across 3 files; `npm run lint`, `npm run typecheck`, `npm run build` all passed.
+- Failure coverage includes ambiguous commits, failed DB flush/commit, moves/restores/cleanup, blocked mutations and recovery, UUID collision, path/symlink/unknown-entry protection, stale schema, byte limits independent of Content-Length, truncated multipart and disconnect spool closure, encrypted/repaired/unreadable PDF rejection, and UI mutation uncertainty/stale details/focus/confirmation.
+- CODE fixes found through verification: compensation reads use a fresh Core connection (no ORM autoflush); unknown storage entry names map to storage errors; incomplete multipart must reach its final boundary; spool IO errors use safe 503 responses; UTC timestamps always include microseconds for lexical chronological sorting.
+- `git diff --check` passed. CHANGELOG.md unchanged. No real learner library/database created or migrated; all migration/PDF tests used temporary directories. No commit or push performed.
+- Non-failing upstream warnings: existing Starlette HTTPX/AnyIO deprecations plus PyMuPDF SWIG type deprecations.
+- Formal MODE: TEST remains required, including real-browser import/details/duplicate/restart/cancel/delete checks with temporary data. Automated checks do not substitute for that browser certification.
+- M0 remains DONE, M1 is READY FOR TEST (not DONE), M2 remains TODO.
+
+
+## M1 formal TEST attempt — 2026-09-18
+
+Result: automated, migration, scope, and live HTTP checks PASS. Overall certification INCOMPLETE: required real-browser verification could not run. M1 remains READY FOR TEST, Mode TEST; M0 remains DONE and M2 remains TODO. CHANGELOG.md is not updated.
+
+Required quality gate:
+
+| Working directory | Exact command | Result |
+| --- | --- | --- |
+| backend | `source .venv/bin/activate && pytest` | PASS, 64 collected, 64 passed, 0 failed, 7 upstream warnings |
+| backend | `source .venv/bin/activate && python -m pip check` | PASS, no broken requirements |
+| frontend | `npm run lint` | PASS, exit 0 |
+| frontend | `npm run test -- --run` | PASS, 3 files, 28 passed, 0 failed |
+| frontend | `npm run typecheck` | PASS, exit 0 |
+| frontend | `npm run build` | PASS, exit 0, Vite 7.3.6 |
+
+Migration/live test:
+- Disposable root: `/var/folders/gx/n5qy94qd5xg4hv43mrd775mr0000gn/T/pdf-learning-os-m1-test-y6emj36h`; PDF_LEARNING_DATA_DIR was its `library` subdirectory; TMPDIR was its `spools` subdirectory.
+- Orchestration command from repository root: `backend/.venv/bin/python /tmp/pdf-learning-os-m1-live-test.py`. The script explicitly passed the project venv interpreter and identical environment to migration and both backend starts.
+- From backend, `python -m alembic upgrade head` ran twice against the fresh temporary database: both exit 0. SQLite inspection found only books and alembic_version, revision 0001_books, ten book columns and no BLOB columns. No downgrade criterion added or downgrade performed.
+- Backend command: `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`. Frontend command from frontend: `npm run dev`. Both served HTTP 200. Initial sandbox loopback binding failed with PermissionError; the authorized network-enabled execution then passed. This was a sandbox restriction, not an application defect.
+- Live POST /books returned 201 with correct embedded title/author, supplied edition/year, and page count. GET /books and GET /books/{id} matched the response. Stored original bytes matched the disposable PDF exactly; SQLite hash/byte count matched the owned file.
+- Same bytes under both original and different filenames returned 409 with existing ID. Different PDF bytes sharing a filename created a separate book. Non-PDF and zero-byte input returned 422.
+- Allowed loopback CORS origins passed; unrelated origin had no allow-origin header. Unknown book returned 404. An encoded arbitrary-path DELETE was rejected, leaving an unrelated sentinel file unchanged.
+- Backend was stopped/restarted against the same temporary database. Metadata, PDF bytes, and stored-file inode persisted.
+- DELETE returned 204, removed only the intended owned directory/row, and left the second book and unrelated sentinel intact. A second deletion with its original manually removed also returned 204. Final books query and all owned books/staging/trash directories were empty; SQLite book count was zero.
+- Report and server logs retained in the disposable root (`report.json`, backend-first.log, backend-restart.log, frontend.log). Report result PASS. Both server processes were stopped; no listeners remained on ports 8000/5173. Repository data/ remained absent before and after verification.
+
+Real browser:
+- Attempted computer-use initialization: `await cua.getState()`.
+- Exact failure: `CUA_REPL_ENABLED_SURFACES is required`.
+- No alternative callable browser/native-computer tool was exposed. No Playwright or other browser dependency installed.
+- Browser import/loading/details/duplicate/confirmation/deletion/reload, visual keyboard checks and console inspection are NOT verified. React component tests cover these behaviors but do not replace the explicit real-browser acceptance gate.
+- Required next step: resume the browser verification with working browser/computer-use surfaces against a temporary library. Only after that gate passes may M1 be marked DONE and CHANGELOG.md updated.
+
+Scope/source review:
+- Reviewed M1 routes, library/storage/PDF services, database configuration/model/migration, and backend/frontend tests and Git changes. Routes delegate library behavior to the service; original filenames are not storage paths. File validation, hash uniqueness, recovery/rollback, missing-file deletion and path/symlink protections have regression coverage.
+- No full text extraction, TOC, chapter mapping, OCR, processing pipeline, AI/RAG/embeddings/vector DB, auth, learning goals or later-domain behavior introduced. PDF binaries remain filesystem originals rather than SQLite BLOBs.
+- Test fixtures use temporary databases, storage, generated PDFs and upload spools. Git ignore probes passed for original PDFs, staging/trash and SQLite under data/. Source integrity preserved.
+
+Defects found/fixed: none. No source, migration, dependency, or test changes during this TEST attempt.
+Files changed during TEST: TASKS.md only; disposable script, fixtures, databases and logs are outside the repository, and normal test/build artifacts are ignored.
+Git: main tracks origin/main at 6c4c168; existing uncommitted M1 implementation remains present. No commit/push. `git diff --check` passed. Total Git diff includes earlier CODE work, not just this TEST record.
+Warnings: seven non-failing upstream warnings (Starlette HTTPX integration, AnyIO alias and PyMuPDF SWIG types). pip cache was unavailable within the sandbox; dependency validation still passed. Browser tooling is the remaining acceptance blocker, not an application-test failure.
+
+
+## M1 final browser certification — 2026-09-19
+
+Result: PASS. Milestone M1 / Mode TEST / Status DONE. This certification supersedes the incomplete browser result above. M0 remains DONE and M2 remains TODO.
+
+Browser verification:
+- Google Chrome completed the required real-browser flow against the isolated temporary learner data directory `/var/folders/gx/n5qy94qd5xg4hv43mrd775mr0000gn/T/pdf-learning-os-m1-browser-8zovsikd`. The test used a disposable generated PDF and did not read or modify learner data. Safari was also used to inspect the initial Ready and empty-library state before the full Chrome flow.
+- Verified the empty library, valid PDF import and importing/loading state, populated list, in-page details, and required M1 metadata.
+- Re-importing the same bytes produced the approved duplicate response and an action to open the existing book; it did not create a second record or stored copy.
+- Deletion required explicit confirmation. Cancel left the book present; confirmed deletion removed it. The book remained absent after page reload.
+- Re-imported the PDF, restarted the backend against the same temporary data directory, reloaded the browser, and verified that the book and metadata persisted. A final confirmed deletion left the temporary library empty.
+- Labels, controls, details navigation, confirmation controls, and keyboard interaction remained usable. No broken UI state, unexpected application error, or obvious browser runtime failure was observed. No browser automation framework or dependency was added.
+
+Final acceptance:
+- The previously recorded backend, frontend, migration, live HTTP, restart, storage-isolation, recovery, duplicate, deletion, and scope checks remain satisfied. The final repository review found no intervening production-code changes beyond the tested M1 implementation; `git diff --check` remains clean and repository `data/` remains absent.
+- All fourteen recorded M1 acceptance criteria now pass. Source integrity is preserved, no M2 behavior or infrastructure was introduced, and no acceptance blocker remains.
+- Defects found/fixed during final browser verification: none. Production code, tests, dependencies, and migrations were unchanged during finalization.
+- Files changed during finalization: `TASKS.md` and `CHANGELOG.md` only. No commit or push performed.
+- Non-failing warnings remain limited to the seven previously recorded upstream Starlette, AnyIO, and PyMuPDF warnings.
