@@ -173,3 +173,11 @@ After importing at least three books, use **Learning goal** to create one active
 Use **Change selected books** to replace the active goal's complete selection while keeping 3–5 books. A selected book cannot be deleted from the library until it is replaced in the active goal; the API returns a clear conflict without changing the book or its files.
 
 M3 adds `POST /learning-goals`, `GET /learning-goals/active`, and `PUT /learning-goals/{goal_id}/books`. After updating from M2, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR`; revision `0003_learning_goals` preserves all existing library and extraction data.
+
+### Book profiles (M4)
+
+Open a book's details and use **Book profile** to record its domain, difficulty, prerequisites, main topics, theory/practice orientation, strengths, weaknesses, and suggested use. Only one current profile is kept per book. Editing replaces the complete profile while preserving its creation time; blank scalar values and empty lists mean that a field has not been recorded.
+
+List fields accept one item per line and reject case-insensitive duplicates and configured item/count limits. At least one profile field is required. Every populated M4 field is labeled as manually entered. Client requests cannot supply provenance, and M4 performs no AI inference, PDF text reading, comparison, role classification, or goal-specific analysis. Any catalog book can be profiled regardless of processing state or whether its original PDF is currently available.
+
+M4 adds `GET /books/{book_id}/profile` and `PUT /books/{book_id}/profile`. After updating from M3, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR`; revision `0004_book_profiles` preserves existing books, extracted content, learning goals, and associations. Deleting a book also removes its profile through the existing database cascade.

@@ -23,7 +23,7 @@ Extract metadata, page text, TOC, chapter/page mapping, and clear errors using P
 Create one active learning goal and associate 3–5 books.
 
 ## M4 — Book Profiles
-**Status:** TODO
+**Status:** DONE
 
 Difficulty, prerequisites, topics, strengths, weaknesses, theory/practice orientation, and editable profile.
 
@@ -485,7 +485,7 @@ Final acceptance:
 - Defects found/fixed during TEST: none. Production code, migrations, tests, and dependencies were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
 
 
-## Active Task
+## Historical M3 task
 
 Task: M3 — Learning Goals
 Milestone: M3
@@ -551,3 +551,78 @@ Final acceptance:
 - All M3 acceptance criteria and FR-012–FR-013 pass. No AI, analysis, profiles, comparison, roles, learning path, reader, translation, recall/quiz, mastery/progress, or M4+ behavior was introduced.
 - Defects found/fixed during TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
 - All temporary test data was isolated from learner data, and both servers were stopped. No commit or push was performed.
+
+
+## Active Task
+
+Task: M4 — Book Profiles
+Milestone: M4
+Mode: TEST
+Status: DONE
+Approval: User explicitly approved the complete M4 plan for implementation on 2026-09-22.
+
+Goal: implement FR-014–FR-015 only: store one current, manually editable, book-level profile per book containing domain, difficulty, prerequisites, main topics, theory/practice orientation, strengths, weaknesses, and suggested use. M5 comparison, roles, AI analysis, learning paths, and later behavior remain out of scope.
+
+Approved ownership: a book has zero or one profile, keyed by `book_id` with cascading deletion. M4 keeps no versions or profile history. Profiles are global book metadata, not learning-goal-specific; `suggested_use` is general guidance, while goal-specific use and roles remain future M5/M6 decisions.
+
+Approved fields: nullable trimmed `domain` (max 200); nullable `difficulty` enum `beginner | intermediate | advanced`; ordered unique lists for `prerequisites` (max 25 items, 200 characters each), `main_topics` (max 50 items, 200 characters each), `strengths` and `weaknesses` (max 20 items each, 500 characters each); nullable `orientation` enum `theory_heavy | balanced | practice_heavy`; nullable trimmed `suggested_use` (max 2,000); UTC created/updated timestamps. Lists are stored as deterministic JSON arrays in SQLite TEXT columns and exposed as arrays. At least one field must be populated to create a profile; null and empty-list values explicitly represent unknown/not recorded.
+
+Approved provenance: every FR-014 field has a server-owned nullable source value from `manual | ai_generated | ai_assisted | derived`. The M4 API never accepts provenance and sets each populated field to `manual`; empty fields have null source. A later assisted workflow may set other values without a schema redesign. Responses expose a per-field provenance map, and the UI labels values as manually entered. No profile claim is represented as extracted PDF source.
+
+Approved AI/content boundary: M4 is manual-first and adds no AI provider, model call, automatic inference, page-text read, or chapter analysis. Any existing catalog book may have a profile regardless of processing status or local-file availability. Processing validation belongs to future automated analysis, not FR-014/015.
+
+Approved interfaces: `GET /books/{book_id}/profile` returns `{profile: null}` for an existing book without a profile and 404 for a missing book. `PUT /books/{book_id}/profile` performs a complete validated create-or-replace and returns the current profile. Routes remain thin; service mutations share the library lock with deletion. No PATCH, history, analysis, comparison, or goal-profile endpoint is added.
+
+Approved frontend: add an accessible profile panel to book details. It supports absent/loading/error/retry states, read-only display with provenance labels, create/edit/cancel, selects for difficulty/orientation, line-separated textareas for list fields, client/server validation, busy/status/focus handling, and unknown-outcome reload without mutation replay. It adds no comparison or role UI.
+
+Data/schema: Alembic revision `0004_book_profiles` adds only `book_profiles`, preserving every M1–M3 table and file. `book_id` is the primary key and an `ON DELETE CASCADE` foreign key to books. Database checks cover scalar bounds, enums, provenance values, and source/value null coherence where practical; service validation covers JSON arrays, counts, item lengths, trimming, and case-insensitive duplicates. Runtime schema head becomes `0004_book_profiles`.
+
+Acceptance criteria:
+1. An existing book can have zero or one current profile; absent and populated states persist across restart.
+2. Complete PUT creates or replaces the profile atomically, preserves `created_at`, advances `updated_at`, and never creates duplicates or history rows.
+3. Every scalar, enum, list count, item length, blank item, and case-insensitive duplicate rule is enforced without partial writes.
+4. All eight fields round-trip in stable JSON shapes with explicit null/empty defaults and per-field provenance.
+5. M4 writes only `manual` provenance for populated fields and never accepts client-supplied source claims.
+6. Unprocessed, failed, processed, and missing-local-file catalog books can be profiled without reading M2 content or invoking AI.
+7. Book deletion cascades its profile without dangling data or changing existing storage cleanup behavior.
+8. A populated M3 database upgrades to `0004_book_profiles` without changing books, processing artifacts, goals, or associations.
+9. Frontend view/create/edit/cancel/save/validation/error/busy/focus/unknown-outcome flows are accessible and tested.
+10. M1–M3 regressions pass, M5 remains unimplemented, no dependency is added, and `CHANGELOG.md` remains unchanged until formal TEST.
+
+Required CODE gates: backend pytest and pip check; frontend lint, Vitest, typecheck, and build; isolated migration verification; `git diff --check`. After implementation set M4 to Mode CODE / Status READY FOR TEST, not DONE.
+
+CODE verification — 2026-09-22:
+- Implemented Alembic revision `0004_book_profiles`, the one-to-one cascading book-profile model, strict schemas, manual-provenance normalization, atomic complete upsert, absent/read APIs, and shared-lock service integration. Runtime schema readiness now requires `0004_book_profiles`.
+- Added an accessible profile panel to book details with absent/loading/error/retry, read/create/edit/cancel, structured selects and line-based lists, provenance labels, client/server validation, busy/status/focus behavior, and unknown-outcome reload without mutation replay.
+- Added backend coverage for absent/create/read/update, normalization and structured validation, server-owned provenance, restart persistence, missing books/files, processing-independent behavior, deletion cascade, and populated-M3 migration. Added frontend transport and component coverage and updated library/schema regressions.
+- Updated `ARCHITECTURE.md` and `README.md` for the M4 storage, service, API, frontend, provenance, migration, and scope boundaries. No dependency or lockfile changed.
+- Targeted checks: backend profile/library/goal suite PASS (65 tests); frontend profile transport/panel/library suite PASS (20 tests); isolated migration upgrade PASS; frontend typecheck PASS.
+- Full CODE gates: backend `pytest -q` PASS (116 tests, 7 existing upstream warnings) and `python -m pip check` PASS; frontend `npm test -- --run` PASS (8 files, 52 tests), lint PASS, typecheck PASS, and build PASS (Vite 7.3.6, 37 modules). Fresh isolated Alembic upgrade/current reached `0004_book_profiles (head)` and `git diff --check` passed.
+- Known non-failing warnings are unchanged: upstream Starlette HTTPX, AnyIO alias, PyMuPDF SWIG deprecations, and the environment-only unwritable pip cache warning. No known M4 implementation issue remains.
+- Formal MODE: TEST remains required; M4 is READY FOR TEST, not DONE. `CHANGELOG.md` remains unchanged, no commit or push was performed, and M5 remains TODO.
+
+## M4 final TEST certification — 2026-09-22
+
+Result: PASS. Milestone M4 / Mode TEST / Status DONE. M0–M3 remain DONE and M5 remains TODO.
+
+Migration and automated verification:
+- Fresh and repeated isolated Alembic upgrades reached `0004_book_profiles (head)`. The populated-M3 upgrade preserved books, pages, chapters, learning goals, associations, original PDF bytes, and extracted page artifacts.
+- Verified the seven expected M0–M4 tables only, the one-to-one `book_profiles` primary key, cascading book foreign key, nullable/bounded scalars, enums, deterministic JSON-list storage, provenance constraints, and value/source coherence checks. No M5+ schema exists.
+- Backend `pytest -q`: PASS, 116 collected, 116 passed, 0 failed, with seven existing upstream Starlette, AnyIO, and PyMuPDF warnings. `python -m pip check`: PASS with no broken requirements; the unwritable pip-cache notice remains environmental and non-failing.
+- Frontend `npm test -- --run`: PASS, 8 files and 52 tests. `npm run lint`, `npm run typecheck`, and `npm run build`: PASS; Vite 7.3.6 built 37 modules. `git diff --check`: PASS.
+
+Live integration verification:
+- Used only `/private/tmp/pdf-learning-os-m4-resume.hs6DFy/live`. Imported four disposable books, confirmed the absent profile state, created/read a complete eight-field profile, replaced it atomically, restarted the backend, and confirmed exact values, timestamps, associations, and manual provenance persisted.
+- Duplicate-field and client-forged-provenance updates returned 422 and left the previous complete profile byte-for-byte unchanged. Missing-book profile lookup returned 404 `book_not_found`.
+- Deleted the profiled book and confirmed its book/profile rows and owned files were gone. An unrelated profile, original PDF hash, processed M2 page/chapter data, active M3 goal, and three unrelated books remained unchanged. M1 list/details/delete, M2 process/chapters, and M3 create/active-goal APIs remained functional.
+
+Real-browser verification:
+- Google Chrome verified the absent state, complete creation with all eight fields, manual provenance labels, reload persistence, multi-field full replacement, and replacement persistence after another reload.
+- Duplicate-topic validation was announced without saving or destroying the prior valid profile. Tab navigation reached the profile action and Enter opened the editor; labeled inputs, selects, textareas, status, alert, focus restoration, and confirmation controls remained keyboard-accessible.
+- Browser deletion removed the profiled book and profile panel immediately; reload confirmed it did not return, while unrelated books and the active goal remained. The old profile URL returned 404 and SQLite contained no dangling profile row.
+- No application console/runtime errors occurred. Observed console warnings/errors came only from installed Chrome extensions; Vite and React emitted normal development messages.
+
+Final acceptance:
+- All ten M4 acceptance criteria and FR-014–FR-015 pass. M4 remains manual-first and adds no AI provider call, automatic generation, comparison, overlap, book roles, learning-path behavior, RAG, embeddings, dependency, or M5+ functionality.
+- Defects found/fixed during TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
+- Learner data was not read or modified. All test PDFs, databases, extracted artifacts, profiles, and goals were isolated disposable data. No commit or push was performed.

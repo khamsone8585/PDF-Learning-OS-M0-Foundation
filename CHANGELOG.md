@@ -4,6 +4,16 @@ Only record completed and verified work.
 
 ## Unreleased
 
+### M4 — Book Profiles — 2026-09-22
+
+- Added one current global profile per book with domain, difficulty, prerequisites, main topics, theory/practice orientation, strengths, weaknesses, suggested use, UTC timestamps, and cascading book ownership.
+- Added strict full-profile create/replace validation, deterministic ordered-list persistence, server-owned per-field provenance, explicit absent-profile responses, and manual editing independent of PDF processing or file availability.
+- Added `GET /books/{book_id}/profile` and `PUT /books/{book_id}/profile`, plus an accessible book-details panel for absent/read/create/edit/cancel, provenance labels, validation, busy/error/success states, focus handling, and unknown-outcome reload.
+- Verified Alembic revision `0004_book_profiles (head)` on fresh, repeated, and populated-M3 upgrades, including exact schema/constraints, cascade cleanup, and preservation of M1–M3 database rows and filesystem artifacts.
+- Verified 116 backend tests, 52 frontend tests, dependency consistency, lint, typecheck, build, live HTTP restart persistence, atomic invalid-update handling, server-owned provenance, deletion cleanup, and unrelated M1–M3 data preservation.
+- Verified the complete real-browser M4 lifecycle in Google Chrome with isolated disposable data: absent state, all-eight-field creation, reload persistence, full replacement, validation preservation, keyboard controls, deletion, and post-reload absence. No learner data was modified.
+- No AI calls, automatic profile generation, comparison, overlap analysis, role classification, learning path, RAG, embeddings, M5+ behavior, new dependency, commit, or push was introduced during certification.
+
 ### M3 — Learning Goals — 2026-09-22
 
 - Added one-active-goal persistence with bounded title and optional description, inactive history, UTC timestamps, and a cascading many-to-many association for 3–5 distinct existing books.

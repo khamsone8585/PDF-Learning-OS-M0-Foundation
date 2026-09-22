@@ -37,6 +37,8 @@ frontend/src/
   features/
     library/
     processing/
+    goals/
+    profiles/
     analysis/
     learning-path/
     reader/
@@ -76,6 +78,7 @@ SQLite:
 - books
 - chapters
 - learning goals
+- book profiles
 - book roles
 - study sessions
 - learner responses
@@ -128,7 +131,8 @@ Book-dependent AI responses should preserve source scope: book, chapter, page ra
 - `POST /learning-goals`
 - `GET /learning-goals/active`
 - `PUT /learning-goals/{goal_id}/books`
-- `POST /analysis/book-profile`
+- `GET /books/{book_id}/profile`
+- `PUT /books/{book_id}/profile`
 - `POST /analysis/compare-books`
 - `POST /analysis/learning-path`
 - `GET /chapters/{chapter_id}`
@@ -162,6 +166,14 @@ M3 implements FR-012–013 only. `learning_goals` stores UUID, bounded title and
 Creating a goal requires 3–5 distinct existing books and atomically deactivates the prior active goal. Inactive goals are retained as read-only history; M3 has no drafts, history UI, reactivation, deletion, or title/description editing. The active goal's complete selection may be replaced with another valid 3–5-book set. Book processing state does not affect selection.
 
 Goal mutations share the library lock with import, processing, correction, and deletion. Deletion is rejected while a book belongs to the active goal, so the active selection cannot silently become invalid. Associations belonging only to inactive goals cascade when their book is deleted.
+
+## M4 book-profile decisions
+
+M4 implements FR-014–015 only. `book_profiles` stores zero or one current global profile per book, using `book_id` as both primary key and cascading foreign key. It stores domain, difficulty, prerequisites, main topics, theory/practice orientation, strengths, weaknesses, suggested use, UTC created/updated timestamps, and one nullable provenance value per profile field. Ordered lists use deterministic JSON arrays in SQLite text columns and arrays in API responses.
+
+Profiles are manually maintained in M4. A complete `PUT /books/{book_id}/profile` creates or replaces the current profile and `GET /books/{book_id}/profile` returns either that profile or an explicit null profile for an existing book. At least one field must be populated. The API does not accept provenance; populated values are marked `manual` and empty values have null provenance. There is no history, PATCH, profile deletion, goal-specific profile, analysis endpoint, or M5 comparison/role behavior.
+
+Profile mutations share the library lock with import, processing, goal mutation, and deletion. Profiling does not depend on processing state, local-file availability, extracted text, or AI. Book deletion relies on the database foreign-key cascade to remove the profile without changing filesystem cleanup behavior.
 
 ## M0 foundation decisions
 
