@@ -28,3 +28,9 @@ dt { font-weight: 600; }
 dd { margin: 0 0 12px; overflow-wrap: anywhere; }
 .error, [role="alert"] { color: #8e351f; }
 .delete-confirm { padding: 12px; background: #fff4e9; }
+.processing-panel { margin-top: 24px; padding: 16px; background: #f6f8f5; border: 1px solid #d5ded5; }
+.processing-panel h4 { margin: 12px 0; }
+.chapter-list { padding-left: 1.5rem; }
+.chapter-list li { margin-bottom: 10px; }
+.chapter-list span { display: block; }
+.chapter-editor fieldset { margin: 12px 0; padding: 12px; border: 1px solid #d5ded5; }

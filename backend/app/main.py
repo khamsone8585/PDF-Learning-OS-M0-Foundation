@@ -7,11 +7,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.body_limit import UploadBodyLimit
 from app.api.books import router as books_router
+from app.api.processing import router as processing_router
 from app.api.health import router
 from app.db.migrations import schema_ready
 from app.services.library import Library
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import DataLock
+from app.services.processing import PDFProcessingService
 from app.config import database_path
 from app.db.connection import create_database_engine
 
@@ -27,6 +29,7 @@ async def lifespan(application: FastAPI):
     application.state.database_engine = engine
     lock = None
     application.state.library = None
+    application.state.processing = None
     application.state.library_error = storage_error()
     if engine is not None:
         try:
@@ -35,6 +38,7 @@ async def lifespan(application: FastAPI):
                 raise LibraryError(503, 'library_setup_required',
                                    'Stop the backend, run python -m alembic upgrade head, then restart.')
             application.state.library = Library(engine, database_path().parent)
+            application.state.processing = PDFProcessingService(application.state.library)
             application.state.library_error = None
         except LibraryError as exc:
             application.state.library_error = exc
@@ -54,7 +58,7 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=['http://localhost:5173', 'http://127.0.0.1:5173'],
-        allow_methods=['GET', 'POST', 'DELETE'],
+        allow_methods=['GET', 'POST', 'PUT', 'DELETE'],
         allow_credentials=False,
     )
     application.add_middleware(UploadBodyLimit)
@@ -65,6 +69,7 @@ def create_app() -> FastAPI:
 
     application.include_router(router)
     application.include_router(books_router)
+    application.include_router(processing_router)
     return application
 
 

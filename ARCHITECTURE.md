@@ -200,3 +200,43 @@ Book responses include id, title, original_filename, author, edition, year, page
 Library errors use {error: {code, message}} with optional field/existing_book_id. Malformed multipart 400; limits 413; non-multipart 415; invalid fields/UUID/PDF 422; not found 404; duplicate 409; storage/schema/cleanup 503. Exceptions never leak paths, SQL or parser details. Allowed CORS methods are GET/POST/DELETE for the existing two loopback origins, without credentials.
 
 The React library screen has import and optional fields, list/loading/empty/error/retry states, metadata details, missing-file warnings, duplicate navigation, and inline deletion confirmation. Cancel receives initial focus; results/errors are announced accessibly. Reads abort at 10 seconds, mutations at 120 seconds. Unknown mutation outcomes refresh the list and require an explicit retry; no optimistic deletion or mutation replay. Existing health behavior is independent.
+
+
+## M2 PDF processing decisions
+
+M2 implements FR-006–011 only. Processing is synchronous in the existing FastAPI threadpool and uses PyMuPDF 1.28.2. No OCR, AI, reader, search, task queue, or new dependency is introduced.
+
+### State and schema
+
+Books persist `unprocessed`, `processing`, `processed`, or `failed`, safe error code/message, attempt/start and last-success timestamps, active extraction UUID, and TOC status. `has_processed_content` is computed from the active generation, so a failed reprocess can retain the prior successful content. Startup changes abandoned processing attempts to `failed / processing_interrupted`.
+
+`pages` stores the book UUID, 1-based physical PDF page number, exact-text character count, and artifact SHA-256. `chapters` stores ordered UUID rows with title, normalized hierarchy level, inclusive page range, and `toc`, `fallback`, or `manual` source. Foreign keys cascade on confirmed book deletion and SQLite foreign-key enforcement is enabled on every connection.
+
+### Extraction and source integrity
+
+Before processing, the stored original must match the M1 SHA-256 and page count and remain structurally valid, unencrypted, and unrepaired. Each page uses `get_text("text", sort=False)`. The returned string is encoded directly as UTF-8 without trimming, Unicode normalization, sorting, rewriting, or AI transformation. Page artifacts are immutable and named by physical page number.
+
+A document is machine-readable only when extraction contains at least 50 Unicode letters/digits overall and one page contains at least 20. Otherwise processing fails with `ocr_required`; OCR is explicitly unsupported in V0.1. Empty individual pages remain valid when the document-level rule passes.
+
+TOC entries are validated in source order. Invalid, out-of-range, and backward entries are skipped; the first valid level becomes 1 and deeper jumps are clamped to one level. Inclusive ranges end before the next same-or-shallower entry. TOC status is available, partial, missing, or invalid. No usable TOC creates one labeled `Full document` fallback rather than invented chapters.
+
+Fallback/manual structure can be replaced atomically with flat titled sections whose first page is 1 and subsequent starts strictly increase. TOC-derived structure is read-only in M2. Successful reprocessing preserves a manual correction; generated TOC/fallback structure is regenerated.
+
+### Storage and recovery
+
+Extracted text is filesystem data, while SQLite is its structural manifest:
+
+```text
+.processing/<book-uuid>/<attempt-uuid>/pages/000001.txt
+books/<book-uuid>/extracted/<generation-uuid>/pages/000001.txt
+```
+
+An attempt writes, flushes, and syncs all page files before its directory moves to the final UUID generation. One database transaction replaces page/generated-chapter rows and switches the active generation. The old generation remains available until that commit. A fresh database read resolves ambiguous commits; startup removes abandoned attempts and unreferenced generations only after validating every managed entry. Missing active artifacts become a safe failed state. Symlinks, unknown entries, and conflicting layouts stop recovery without deletion.
+
+M1 trash operations move the complete UUID directory, so original and extracted data share deletion rollback/recovery. A post-commit cleanup failure retains the valid active generation, reports `processing_cleanup_pending`, and blocks mutations until recovery succeeds.
+
+### API and frontend
+
+`POST /books/{id}/process` returns the terminal Book response; `GET /books/{id}/chapters` returns processing/TOC/source state and the ordered outline; `PUT /books/{id}/chapters` replaces fallback/manual sections. Book list/details include status, safe error, timestamps, content availability, and TOC status. Hashes, generation IDs, paths, and page text are not exposed.
+
+The library detail panel shows processing/reprocessing, durable failure and OCR-required messages, an indented outline with page ranges, and a flat fallback correction editor. It polls a server-side processing state every two seconds, bounds processing requests at ten minutes, and refreshes unknown outcomes without automatic replay. Chapter text reading remains M7.

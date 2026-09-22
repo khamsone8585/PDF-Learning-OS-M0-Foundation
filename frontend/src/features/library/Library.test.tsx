@@ -1,22 +1,31 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Library from './Library'
-import { deleteBook, getBook, importBook, LibraryError, listBooks } from '../../api/books'
+import { deleteBook, getBook, getChapters, importBook, LibraryError, listBooks,
+  processBook, updateChapters } from '../../api/books'
 import type { Book } from '../../api/books'
 
 vi.mock('../../api/books', async (original) => ({
   ...await original<typeof import('../../api/books')>(),
   listBooks: vi.fn(), getBook: vi.fn(), importBook: vi.fn(), deleteBook: vi.fn(),
+  getChapters: vi.fn(), processBook: vi.fn(), updateChapters: vi.fn(),
 }))
 const book: Book = { id: '00000000-0000-4000-8000-000000000001', title: 'Algorithms',
   original_filename: 'algorithms.pdf', author: null, edition: null, year: null,
-  page_count: 12, size_bytes: 500, imported_at: '2026-09-18T10:00:00Z', file_available: true }
+  page_count: 12, size_bytes: 500, imported_at: '2026-09-18T10:00:00Z', file_available: true,
+  processing_status: 'unprocessed', processing_error: null, processing_started_at: null,
+  processed_at: null, has_processed_content: false, toc_status: null }
 
 beforeEach(() => {
   vi.mocked(listBooks).mockReset().mockResolvedValue([])
   vi.mocked(getBook).mockReset().mockResolvedValue(book)
   vi.mocked(importBook).mockReset().mockResolvedValue(book)
   vi.mocked(deleteBook).mockReset().mockResolvedValue(undefined)
+  vi.mocked(getChapters).mockReset().mockResolvedValue({ book_id: book.id,
+    processing_status: 'unprocessed', content_available: false, toc_status: null,
+    structure_source: null, chapters: [] })
+  vi.mocked(processBook).mockReset().mockResolvedValue(book)
+  vi.mocked(updateChapters).mockReset()
 })
 
 function selectFile() {
@@ -136,6 +145,6 @@ describe('library UI', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Second' }))
     await screen.findByRole('heading', { name: 'Second' })
     await act(async () => resolveOld(book))
-    expect(within(screen.getByRole('article')).getByRole('heading')).toHaveTextContent('Second')
+    expect(within(screen.getByRole('article')).getByRole('heading', { level: 3 })).toHaveTextContent('Second')
   })
 })

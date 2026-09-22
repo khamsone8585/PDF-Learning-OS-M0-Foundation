@@ -13,7 +13,7 @@ Create React+TS+Vite frontend, FastAPI backend, SQLite, frontend tests, backend 
 Import, save, list, open details, and delete local PDFs.
 
 ## M2 — PDF Processing
-**Status:** TODO
+**Status:** DONE
 
 Extract metadata, page text, TOC, chapter/page mapping, and clear errors using PyMuPDF. No OCR.
 
@@ -292,7 +292,7 @@ Final commit/tree/status verification is performed after creating the baseline a
 
 Repository-maintenance verification: baseline `6c4c168` was committed and pushed to origin/main at https://github.com/khamsone8585/PDF-Learning-OS-M0-Foundation.git. Main tracks origin/main; clean tree verified before M1. Earlier no-remote statements describe the original local-only scope.
 
-## Active Task
+## Historical M1 task
 
 Task: M1 — Local PDF Library
 Milestone: M1
@@ -410,3 +410,76 @@ Final acceptance:
 - Defects found/fixed during final browser verification: none. Production code, tests, dependencies, and migrations were unchanged during finalization.
 - Files changed during finalization: `TASKS.md` and `CHANGELOG.md` only. No commit or push performed.
 - Non-failing warnings remain limited to the seven previously recorded upstream Starlette, AnyIO, and PyMuPDF warnings.
+
+
+## Active Task
+
+Task: M2 — PDF Processing
+Milestone: M2
+Mode: TEST
+Status: DONE
+Approval: User explicitly approved the complete M2 plan for implementation on 2026-09-19.
+
+Goal: implement FR-006–FR-011 only: exact per-page text extraction for machine-readable PDFs, bookmark/TOC extraction, physical page references, deterministic chapter mapping, correction of fallback structure, and durable processing states/errors. OCR and M3+ behavior remain out of scope.
+
+Approved lifecycle: synchronous threadpool processing with `unprocessed`, `processing`, `processed`, and `failed`. Reprocessing keeps the last successful artifacts until a replacement commits; a failed reprocess preserves them. Startup marks interrupted attempts failed. Concurrent processing, deletion, and correction conflicts are rejected safely.
+
+Approved persistence: Alembic revision `0002_pdf_processing` extends books with processing/error/timestamp/active-generation/TOC fields and adds pages and chapters with cascade ownership. Exact PyMuPDF `get_text("text", sort=False)` output is stored as immutable UTF-8 page artifacts under UUID-derived extraction generations; SQLite stores page references, hashes, counts, and structure. No API accepts or exposes paths.
+
+Approved extraction: verify the stored original digest and structure before processing. Require at least 50 Unicode letters/digits in total and one page with at least 20; otherwise store `failed / ocr_required` and explain that OCR is unsupported. Never trim, normalize, reorder, summarize, or otherwise rewrite extracted page text.
+
+Approved TOC and correction: validate bookmarks in source order, skip invalid/backward entries, normalize level jumps deterministically, derive inclusive ranges, and report available/partial/missing/invalid TOC state. Missing or unusable TOC yields one explicit `Full document` fallback. Only fallback/manual outlines can be replaced by ordered flat section titles and start pages; no AI chapter detection.
+
+Approved interfaces: extend Book processing metadata; add `POST /books/{id}/process`, `GET /books/{id}/chapters`, and `PUT /books/{id}/chapters`; add an accessible processing/outline/fallback-correction panel to book details. No page reader is added.
+
+Acceptance criteria:
+1. Exact per-page UTF-8 artifacts match unsorted PyMuPDF output and retain 1-based physical page references.
+2. Nested, partial, missing, and invalid TOCs map deterministically without fabricated source structure.
+3. Valid fallback/manual corrections replace structure atomically; TOC structures remain read-only.
+4. Image-only/sparse-text PDFs fail clearly as OCR-required without partial artifacts.
+5. Processing and safe errors persist across restart; failed reprocessing preserves the last successful content.
+6. Versioned filesystem/database switching and recovery follow committed active-generation state at every failure boundary.
+7. Confirmed M1 deletion removes originals and all derived M2 data; rollback/recovery preserve ownership and path safety.
+8. Existing M1 rows migrate to unprocessed without metadata or file changes, and all M1 behavior remains passing.
+9. Frontend processing, success, failure, OCR, outline, correction, polling, focus, and stale-response states are accessible and tested.
+10. No OCR, AI, reader, M3+, worker queue, cloud, or unapproved dependency/infrastructure is introduced.
+
+Required CODE gates: backend pytest and pip check; frontend lint, Vitest, typecheck, and build. After implementation and automated verification, set Mode CODE / Status READY FOR TEST. Do not update CHANGELOG.md until formal TEST passes.
+
+CODE verification — 2026-09-19:
+- Implemented exact per-page PyMuPDF text extraction, physical page references, guarded UTF-8 generation storage, source-digest validation, deterministic OCR-required classification, bookmark normalization, inclusive nested ranges, and explicit fallback structure.
+- Added durable processing lifecycle/error metadata, pages and chapters schema, Alembic revision `0002_pdf_processing`, SQLite foreign-key enforcement, synchronous process/chapters/correction APIs, and CORS PUT support. Existing M1 rows migrate to unprocessed without replacing the database.
+- Extended UUID-owned storage, trash deletion, compensation, and startup recovery for processing attempts and versioned extracted generations. Ambiguous commits follow the fresh active-generation pointer; failed reprocessing preserves prior successful artifacts and manual corrections.
+- Added the accessible frontend processing panel, durable error and OCR guidance, status polling, outline display, and flat fallback/manual correction editor. No page text reader, router, frontend dependency, or background worker was added.
+- Backend `pytest`: PASS, 82 collected, 82 passed, 0 failed, 7 upstream warnings. Coverage includes exact artifacts, multi-page references, nested/partial/missing/invalid TOC, text thresholds, source changes, correction, reprocessing, ambiguous/failed commits, cleanup recovery, restart, delete cascade, migration, path isolation, and all M1 tests.
+- Backend `.venv/bin/python -m pip check`: PASS, no broken requirements. The pip cache warning is environmental and non-failing.
+- Frontend `npm run lint`: PASS. `npm run test -- --run`: PASS, 4 files and 32 tests. `npm run typecheck`: PASS. `npm run build`: PASS with Vite 7.3.6.
+- `git diff --check`: PASS. Repository `data/` remains absent; tests used temporary databases, storage, PDFs, and extraction artifacts. No learner data was read or modified.
+- No dependency versions changed. `CHANGELOG.md` remains unchanged. No commit or push performed.
+- Non-failing warnings remain the existing Starlette HTTPX, AnyIO alias, and PyMuPDF SWIG deprecations.
+- Formal MODE: TEST remains required for disposable live migration/API and real-browser processing, nested outline, fallback correction, OCR-required, reprocessing, restart persistence, and final deletion verification. M2 is READY FOR TEST, not DONE; M3 remains TODO.
+
+
+## M2 final TEST certification — 2026-09-22
+
+Result: PASS. Milestone M2 / Mode TEST / Status DONE. M0 and M1 remain DONE; M3 remains TODO.
+
+Automated and migration verification:
+- A fresh disposable data directory at `/private/tmp/pdf-learning-os-m2-final.erpLo2/library` was used for Alembic and all live checks. `python -m alembic current` was checked before migration, `python -m alembic upgrade head` completed, and the final current revision was `0002_pdf_processing (head)`.
+- Backend `python -m pytest -q`: PASS, 82 collected, 82 passed, 0 failed, with the seven previously recorded upstream Starlette, AnyIO, and PyMuPDF warnings. `python -m pip check`: PASS, no broken requirements.
+- Frontend `npm test -- --run`: PASS, 4 files and 32 tests. `npm run lint`, `npm run typecheck`, and `npm run build`: PASS; Vite 7.3.6 built 33 modules.
+
+Live integration verification:
+- Imported disposable nested-TOC, no-TOC, image-only, and unrelated control PDFs into the isolated library. Exact extracted UTF-8 bytes matched PyMuPDF `get_text("text", sort=False)` on all three nested-TOC pages; SQLite retained physical page numbers 1, 2, and 3 and matching SHA-256 values.
+- Verified nested bookmark structure and inclusive ranges, explicit `Full document` fallback, atomic two-section manual correction, OCR-required failure without processed content, successful reprocessing, and persistence of processing states, TOC, OCR error, and manual structure across backend restart.
+- Confirmed deletion of the three M2 books returned 204 and removed their original/extracted directories plus all page/chapter rows. Their old detail endpoints returned 404 with `book_not_found` / `Book not found.` before and after restart. The unrelated control book and external sentinel remained intact through those deletions; final isolated cleanup left zero books, pages, chapters, staging, trash, or processing artifacts.
+
+Real-browser verification:
+- Google Chrome completed the M2 flow against the same disposable library. Verified processed nested bookmarks with hierarchy and physical ranges, successful browser reprocessing, manual fallback correction to `Core Concepts` and `Applications`, correction persistence after reload, and the durable OCR-required guidance after reprocessing the image-only PDF.
+- After deletion, browser refresh showed only the unrelated control book. After backend restart and page reload, none of the three deleted titles returned and the control book remained. Browser console inspection found no application errors; warnings came only from an unrelated installed extension.
+- Local file selection through the Chrome extension was not required for the M2 gate because M1's real-browser import lifecycle is already certified; disposable fixture imports were performed through the verified local API. No Playwright package, browser framework, dependency, or product code was added.
+
+Final acceptance:
+- All ten M2 acceptance criteria pass. FR-006–FR-011 are verified, source integrity and physical page references are preserved, and no OCR, AI, reader, M3+, worker, cloud, or other unapproved scope was introduced.
+- The repository learner database was not used: its SHA-256, size, and modification timestamp were identical before and after certification. All servers were stopped. No commit or push was performed.
+- Defects found/fixed during TEST: none. Production code, migrations, tests, and dependencies were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.

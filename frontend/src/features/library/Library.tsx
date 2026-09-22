@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { deleteBook, getBook, importBook, LibraryError, listBooks } from '../../api/books'
 import type { Book } from '../../api/books'
+import ProcessingPanel from '../processing/ProcessingPanel'
 
 const asError = (error: unknown) => error instanceof LibraryError ? error : new LibraryError('Library request failed.')
 
@@ -14,7 +15,7 @@ export default function Library() {
   const [detailError, setDetailError] = useState('')
   const [importError, setImportError] = useState<LibraryError | null>(null)
   const [deleteError, setDeleteError] = useState<LibraryError | null>(null)
-  const [busy, setBusy] = useState<'import' | 'delete' | null>(null)
+  const [busy, setBusy] = useState<'import' | 'delete' | 'processing' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [notice, setNotice] = useState('')
   const alive = useRef(false)
@@ -57,6 +58,11 @@ export default function Library() {
 
   useEffect(() => { if (confirming) cancel.current?.focus() }, [confirming])
   useEffect(() => { if (detail && !detailLoading) detailsHeading.current?.focus() }, [detail, detailLoading])
+
+  const updateBook = useCallback((book: Book) => {
+    setDetail(current => current?.id === book.id ? book : current)
+    setBooks(current => current.map(item => item.id === book.id ? book : item))
+  }, [])
 
   async function openBook(id: string, button?: HTMLButtonElement) {
     detailRequest.current?.abort()
@@ -152,7 +158,7 @@ export default function Library() {
     {importError && <div role="alert"><p>{importError.message}</p>
       {importError.existingBookId && <button disabled={busy !== null} onClick={() => void openBook(importError.existingBookId!)}>Open existing book</button>}
     </div>}
-    <p role="status" aria-label="Library activity">{busy === 'import' ? 'Importing…' : busy === 'delete' ? 'Deleting…' : notice}</p>
+    <p role="status" aria-label="Library activity">{busy === 'import' ? 'Importing…' : busy === 'delete' ? 'Deleting…' : busy === 'processing' ? 'PDF processing is active.' : notice}</p>
     <div className="library-toolbar"><h3>Books</h3><button disabled={loading || busy !== null} onClick={() => void refresh()}>Refresh library</button></div>
     {loading && <p role="status">Loading books…</p>}
     {listError && <div role="alert"><p>{listError}</p><button onClick={() => void refresh()}>Retry library</button></div>}
@@ -160,6 +166,7 @@ export default function Library() {
     <ul className="book-list">{books.map(book => <li key={book.id}>
       <button disabled={busy !== null} onClick={event => void openBook(book.id, event.currentTarget)}>{book.title}</button>
       <span>{book.page_count} pages · {book.author || 'Author not provided'}</span>
+      <span>Processing: {book.processing_status}</span>
       {!book.file_available && <span className="error">Local PDF is missing</span>}
     </li>)}</ul>
     {detailLoading && <p role="status">Loading book details…</p>}
@@ -173,7 +180,9 @@ export default function Library() {
         ['Imported', new Date(detail.imported_at).toLocaleString()],
       ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value ?? 'Not provided'}</dd></div>)}</dl>
       {!detail.file_available && <p role="alert">The local PDF is missing. You can remove this library entry.</p>}
-      {!confirming ? <button ref={remove} disabled={busy !== null} onClick={() => setConfirming(true)}>Remove book</button>
+      <ProcessingPanel book={detail} disabled={busy !== null}
+        onBookChange={updateBook} onBusyChange={active => setBusy(active ? 'processing' : null)} />
+      {!confirming ? <button ref={remove} disabled={busy !== null || detail.processing_status === 'processing'} onClick={() => setConfirming(true)}>Remove book</button>
         : <div className="delete-confirm" role="group" aria-label="Confirm deletion">
           <p>Remove “{detail.title}”? Its local PDF and library entry will be permanently removed.</p>
           <button ref={cancel} disabled={busy !== null} onClick={() => { setConfirming(false); setDeleteError(null); setTimeout(() => remove.current?.focus(), 0) }}>Cancel</button>

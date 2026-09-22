@@ -4,6 +4,16 @@ Only record completed and verified work.
 
 ## Unreleased
 
+### M2 — PDF Processing — 2026-09-22
+
+- Added exact per-page PyMuPDF text extraction with immutable UTF-8 artifacts, 1-based physical page references, source digest validation, and durable processing/error state.
+- Added deterministic PDF bookmark normalization and inclusive chapter mapping, explicit fallback structure, atomic manual fallback correction, and clear OCR-required handling without adding OCR.
+- Added versioned extraction generations, SQLite page/chapter manifests with cascade ownership, restart recovery, safe reprocessing, and deletion cleanup for original and derived content.
+- Added the accessible browser processing panel with processing/reprocessing status, nested outlines, page ranges, persistent errors, and fallback correction controls.
+- Verified Alembic revision `0002_pdf_processing (head)`, 82 backend tests, 32 frontend tests, dependency consistency, lint, typecheck, build, exact extraction bytes/hashes, live restart/deletion recovery, and isolated storage integrity.
+- Verified the real-browser M2 lifecycle in Google Chrome with disposable data: nested TOC, reprocessing, fallback correction and reload persistence, OCR-required behavior, deletion refresh/restart persistence, old-record 404 responses, and unrelated-data isolation. No learner data was modified.
+- No OCR, AI, reader, M3+, task queue, cloud infrastructure, new dependency, commit, or push was introduced during certification.
+
 ### M1 — Local PDF Library — 2026-09-19
 
 - Added local PDF import with byte-identical filesystem storage, optional bibliographic metadata, structural PDF validation, a 100 MiB file limit, and deterministic list and details APIs.

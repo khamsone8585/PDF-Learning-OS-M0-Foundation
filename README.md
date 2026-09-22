@@ -141,3 +141,27 @@ Back up the **whole data directory with the backend stopped**. Restore database 
 Use a newly created temporary directory as `PDF_LEARNING_DATA_DIR` for both migration and server commands. Start the frontend normally. Import two different PDFs, verify metadata/details, retry identical bytes under a different filename, restart the backend and verify persistence, cancel a deletion, then confirm deletion. Check keyboard navigation and error recovery. Do not point this verification at the learner's real library.
 
 The CODE test suite covers these operations through the API and React component tests. A real-browser lifecycle check remains part of formal MODE: TEST certification.
+
+
+### Processing a PDF (M2)
+
+Open an imported book and choose **Process PDF**. The backend verifies that the local original still matches the imported SHA-256, then extracts exact per-page text and PDF bookmarks with PyMuPDF. Processing is local and synchronous; the UI shows and persists Not processed, Processing, Processed, or Processing failed.
+
+Extracted page text is PyMuPDF's unsorted text output encoded directly as UTF-8. It is not trimmed, reordered, summarized, normalized, or sent to an external service. References use 1-based physical PDF pages. M2 stores no page text in SQLite and exposes no text/reader endpoint.
+
+A document must contain at least 50 Unicode letters/digits in total and at least one page with 20. Documents below that boundary report that OCR is required. OCR is not supported in V0.1. A failed reprocess keeps the last successful extraction available.
+
+When valid bookmarks exist, the chapter outline preserves their source order and nested levels and shows inclusive page ranges. Invalid bookmark entries are skipped deterministically. With no usable bookmarks, the app creates one clearly labeled **Full document** fallback. Use **Correct fallback sections** to replace fallback/manual structure with flat titled sections and increasing start pages. PDF bookmark structure is read-only, and M2 does not include a chapter reader.
+
+Processing adds these owned paths under the configured data directory:
+
+```text
+.processing/<book-uuid>/<attempt-uuid>/pages/000001.txt
+books/<book-uuid>/extracted/<generation-uuid>/pages/000001.txt
+```
+
+Do not edit these paths. Staged generations are switched atomically through the SQLite active-generation record. Startup finishes safe cleanup, marks interrupted processing failed, and refuses unknown files or symlinks. Deleting a book removes its original, extracted text, page records, and chapter records together.
+
+After updating from M1, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR` used by the server. Existing M1 books become Not processed without changing their metadata or original PDFs.
+
+For M2 verification, use a temporary data directory and disposable PDFs: one multi-page text PDF with nested bookmarks, one text PDF without bookmarks for manual correction, and one image-only PDF for the OCR-required state. Verify reprocessing, backend restart persistence, and final deletion before using learner data.

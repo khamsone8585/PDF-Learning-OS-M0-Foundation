@@ -5,10 +5,10 @@ from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.models.book import Book
+from app.models.book import Book, Chapter, Page
 from app.schemas.book import BookResponse
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import Storage, sync_directory
@@ -31,11 +31,23 @@ class Library:
 
     def recover(self):
         # Read committed state and validate ALL entries before any destructive work.
+        with Session(self.engine) as session:
+            books = {book.id: (book.active_extraction_id, book.processing_status)
+                     for book in session.scalars(select(Book))}
         ids = self.ids()
-        entries = {area: self.storage.entries(area) for area in ('books', '.staging', '.trash')}
+        entries = {area: self.storage.entries(area)
+                   for area in ('books', '.staging', '.trash', '.processing')}
         for path in entries['.trash']:
             if self.storage.path('books', path.name).exists():
                 raise OSError('Conflicting recovery directories')
+        # Validate generation ownership before making any filesystem change.
+        for path in entries['books']:
+            if path.name in books:
+                active, _status = books[path.name]
+                generation_ids = {item.name for item in self.storage.generations(path.name)}
+                if active is not None and active not in generation_ids:
+                    # A missing active generation is reconciled in the database below.
+                    pass
         for path in entries['.trash']:
             if path.name in ids:
                 self.storage.move('.trash', 'books', path.name)
@@ -43,14 +55,43 @@ class Library:
                 self.storage.remove('.trash', path.name)
         for path in entries['.staging']:
             self.storage.remove('.staging', path.name)
+        for path in entries['.processing']:
+            self.storage.remove_processing(path.name)
         for path in entries['books']:
             if path.name not in ids:
                 self.storage.remove('books', path.name)
+        with Session(self.engine) as session:
+            for book in session.scalars(select(Book)):
+                generation_ids = {item.name for item in self.storage.generations(book.id)}
+                active = book.active_extraction_id
+                for generation_id in generation_ids - ({active} if active else set()):
+                    self.storage.remove_generation(book.id, generation_id)
+                if active is not None and active not in generation_ids:
+                    session.execute(delete(Page).where(Page.book_id == book.id))
+                    session.execute(delete(Chapter).where(Chapter.book_id == book.id))
+                    book.active_extraction_id = None
+                    book.toc_status = None
+                    book.processing_status = 'failed'
+                    book.processing_error_code = 'extraction_artifacts_missing'
+                    book.processing_error_message = 'Extracted text is missing. Process the PDF again.'
+                elif book.processing_status == 'processing':
+                    book.processing_status = 'failed'
+                    book.processing_error_code = 'processing_interrupted'
+                    book.processing_error_message = 'Processing was interrupted. Try processing the PDF again.'
+            session.commit()
         self.blocked = False
 
     def view(self, book):
-        values = {key: getattr(book, key) for key in BookResponse.model_fields if key != 'file_available'}
-        return BookResponse(**values, file_available=self.storage.available(book.id)).model_dump()
+        values = {key: getattr(book, key) for key in (
+            'id', 'title', 'original_filename', 'author', 'edition', 'year', 'page_count',
+            'imported_at', 'size_bytes', 'processing_status', 'processing_started_at',
+            'processed_at', 'toc_status')}
+        error = None
+        if book.processing_error_code:
+            error = {'code': book.processing_error_code, 'message': book.processing_error_message}
+        return BookResponse(**values, file_available=self.storage.available(book.id),
+                            processing_error=error,
+                            has_processed_content=book.active_extraction_id is not None).model_dump()
 
     def list_books(self):
         with self.lock, Session(self.engine) as session:
@@ -131,6 +172,9 @@ class Library:
                             self.storage.remove('.trash', book_id)
                             return
                         raise LibraryError(404, 'book_not_found', 'Book not found.')
+                    if book.processing_status == 'processing':
+                        raise LibraryError(409, 'processing_in_progress',
+                                           'Wait for PDF processing to finish before deleting this book.')
                     if self.storage.path('books', book_id).exists():
                         self.storage.move('books', '.trash', book_id)
                     session.delete(book)
