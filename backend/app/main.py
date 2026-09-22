@@ -9,10 +9,12 @@ from app.api.body_limit import UploadBodyLimit
 from app.api.books import router as books_router
 from app.api.processing import router as processing_router
 from app.api.health import router
+from app.api.learning_goals import router as learning_goals_router
 from app.db.migrations import schema_ready
 from app.services.library import Library
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import DataLock
+from app.services.learning_goals import LearningGoalService
 from app.services.processing import PDFProcessingService
 from app.config import database_path
 from app.db.connection import create_database_engine
@@ -30,6 +32,7 @@ async def lifespan(application: FastAPI):
     lock = None
     application.state.library = None
     application.state.processing = None
+    application.state.learning_goals = None
     application.state.library_error = storage_error()
     if engine is not None:
         try:
@@ -39,6 +42,7 @@ async def lifespan(application: FastAPI):
                                    'Stop the backend, run python -m alembic upgrade head, then restart.')
             application.state.library = Library(engine, database_path().parent)
             application.state.processing = PDFProcessingService(application.state.library)
+            application.state.learning_goals = LearningGoalService(application.state.library)
             application.state.library_error = None
         except LibraryError as exc:
             application.state.library_error = exc
@@ -70,6 +74,7 @@ def create_app() -> FastAPI:
     application.include_router(router)
     application.include_router(books_router)
     application.include_router(processing_router)
+    application.include_router(learning_goals_router)
     return application
 
 

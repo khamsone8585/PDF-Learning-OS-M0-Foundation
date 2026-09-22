@@ -18,7 +18,7 @@ Import, save, list, open details, and delete local PDFs.
 Extract metadata, page text, TOC, chapter/page mapping, and clear errors using PyMuPDF. No OCR.
 
 ## M3 — Learning Goals
-**Status:** TODO
+**Status:** DONE
 
 Create one active learning goal and associate 3–5 books.
 
@@ -412,7 +412,7 @@ Final acceptance:
 - Non-failing warnings remain limited to the seven previously recorded upstream Starlette, AnyIO, and PyMuPDF warnings.
 
 
-## Active Task
+## Historical M2 task
 
 Task: M2 — PDF Processing
 Milestone: M2
@@ -483,3 +483,71 @@ Final acceptance:
 - All ten M2 acceptance criteria pass. FR-006–FR-011 are verified, source integrity and physical page references are preserved, and no OCR, AI, reader, M3+, worker, cloud, or other unapproved scope was introduced.
 - The repository learner database was not used: its SHA-256, size, and modification timestamp were identical before and after certification. All servers were stopped. No commit or push was performed.
 - Defects found/fixed during TEST: none. Production code, migrations, tests, and dependencies were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
+
+
+## Active Task
+
+Task: M3 — Learning Goals
+Milestone: M3
+Mode: TEST
+Status: DONE
+Approval: User explicitly approved the complete M3 plan for implementation on 2026-09-22.
+
+Goal: implement FR-012–FR-013 only: create one active learning goal with an optional description and associate 3–5 distinct existing books. Book analysis, AI, profiles, comparison, roles, paths, and M4+ remain out of scope.
+
+Approved persistence: Alembic revision `0003_learning_goals` adds learning goals and a many-to-many goal/book association. Multiple goals may remain as inactive history, a partial unique index permits at most one active goal, association primary keys prevent duplicates, and book/goal foreign keys cascade without dangling rows.
+
+Approved lifecycle: every new goal is active and must contain 3–5 books; creation atomically deactivates the prior active goal. No drafts, inactive-goal browsing, reactivation, deletion, or title/description editing are included. The active goal's complete book selection can be replaced atomically with another valid 3–5-book set.
+
+Approved integrity: title is trimmed and limited to 1–200 characters; optional description is trimmed, blank-normalized to null, and limited to 2,000 characters. Missing, malformed, or duplicate book IDs fail the whole mutation. Any existing book is selectable regardless of processing status. Deleting a book in the active goal is blocked until it is replaced; inactive associations cascade on later book deletion.
+
+Approved interfaces: add `POST /learning-goals`, `GET /learning-goals/active`, and `PUT /learning-goals/{id}/books`. Add an accessible frontend flow to create/view the active goal, select 3–5 existing books, replace its selection, and start a new goal with clear deactivation notice.
+
+Acceptance criteria:
+1. Goals with exactly three or five distinct existing books can be created and survive restart.
+2. Creating a new goal atomically leaves it as the sole active goal and retains the prior goal inactive.
+3. Invalid text, selection counts, duplicate/malformed IDs, and missing books are rejected without partial changes.
+4. The active goal selection can be replaced atomically only with another valid 3–5-book set.
+5. Unprocessed, failed, and processed books are selectable without triggering processing or analysis.
+6. Deleting an actively selected book is blocked before database or filesystem mutation; deletion works after valid replacement.
+7. Foreign keys prevent dangling relationships and allow inactive associations to cascade on book deletion.
+8. Migration from a populated M2 database preserves books, pages, chapters, extraction metadata, and files.
+9. Frontend creation, active display, selection bounds, replacement, busy/error/focus, and unknown-outcome states are accessible and tested.
+10. All M1/M2 behavior remains passing and no M4+ behavior or new dependency is introduced.
+
+Required CODE gates: backend pytest and pip check; frontend lint, Vitest, typecheck, and build; `git diff --check`. After implementation and automated verification, set Mode CODE / Status READY FOR TEST. Do not update CHANGELOG.md until formal TEST passes.
+
+CODE verification — 2026-09-22:
+- Added Alembic revision `0003_learning_goals`, learning-goal and association models, one-active-goal database enforcement, 3–5-book transactional validation, inactive history, active selection replacement, and safe book-deletion protection.
+- Added `POST /learning-goals`, `GET /learning-goals/active`, and `PUT /learning-goals/{id}/books` with stable response contracts, explicit validation errors, shared library locking, persistence, and no processing prerequisite.
+- Added the accessible Learning goal interface for creation, optional description, 3–5 existing-book selection, active-goal display, full selection replacement, new-goal deactivation warning, busy/error/focus states, and unknown-outcome refresh without mutation replay.
+- Fresh isolated Alembic upgrade reached `0003_learning_goals (head)`. Migration coverage verifies populated M2 books, pages, chapters, and extraction metadata remain intact.
+- Backend `pytest`: PASS, 98 collected, 98 passed, 0 failed, with the seven existing upstream warnings. Backend `python -m pip check`: PASS, no broken requirements.
+- Frontend `npm test -- --run`: PASS, 6 files and 43 tests. `npm run lint`, `npm run typecheck`, and `npm run build`: PASS; Vite built 35 modules.
+- `git diff --check`: PASS. Tests and migration checks used temporary data only; no learner data was read or modified. No dependency changes, commit, or push were performed.
+- `CHANGELOG.md` remains unchanged. Formal MODE: TEST remains required for isolated live API/restart/deletion checks and real-browser creation, validation, replacement, new-goal activation, persistence, and protected deletion. M4 remains TODO.
+
+## M3 final TEST certification — 2026-09-22
+
+Result: PASS. Milestone M3 / Mode TEST / Status DONE. M0–M2 remain DONE and M4 remains TODO.
+
+Automated and migration verification:
+- Backend `pytest`: PASS, 98 collected, 98 passed, 0 failed, with seven existing upstream Starlette, AnyIO, and PyMuPDF warnings. `python -m pip check`: PASS, no broken requirements.
+- Frontend `npm test -- --run`: PASS, 6 files and 43 tests. `npm run lint`, `npm run typecheck`, and `npm run build`: PASS; Vite 7.3.6 built 35 modules.
+- Fresh and populated-M2 temporary databases both reached `0003_learning_goals (head)`. Repeated upgrade to head was safe. Existing books, pages, chapters, extraction metadata, original PDF bytes, and page artifacts remained unchanged.
+- Verified the exact six-table M3 schema, composite association primary key, cascading goal/book foreign keys, and partial unique active-goal index. No M4+ schema exists.
+
+Live integration verification:
+- Used `/private/tmp/pdf-learning-os-m3-final.LQpcSk/live` only. Imported six disposable PDFs, processed an unrelated control book, created a three-book goal, restarted the backend, and confirmed the goal and associations persisted.
+- Replaced the active selection with five books; rejected two, six, duplicate, and missing-ID selections with the approved status/code responses. Creating a second goal retained the first inactive and left exactly one active goal.
+- Deleting an actively selected book returned 409 `book_in_active_goal` without changing the book. After a valid replacement, deletion returned 204, left no dangling associations, and preserved the unrelated book's M2 processing row, page manifest, chapter structure, and extracted content.
+
+Real-browser verification:
+- Google Chrome verified active-goal loading, title and optional description entry, visible 3–5 validation, three- and five-book selection, active display, selected-book display, selection replacement, new-goal deactivation warning, and creation of a new sole active goal.
+- A fresh browser tab confirmed persistence. The browser showed the approved deletion conflict for a selected book, then allowed deletion after that book was removed from a still-valid selection; the active goal remained valid afterward.
+- Keyboard focus/navigation and mutation focus restoration were usable. No application console errors occurred; console warnings/errors were limited to unrelated installed Chrome extensions.
+
+Final acceptance:
+- All M3 acceptance criteria and FR-012–FR-013 pass. No AI, analysis, profiles, comparison, roles, learning path, reader, translation, recall/quiz, mastery/progress, or M4+ behavior was introduced.
+- Defects found/fixed during TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
+- All temporary test data was isolated from learner data, and both servers were stopped. No commit or push was performed.

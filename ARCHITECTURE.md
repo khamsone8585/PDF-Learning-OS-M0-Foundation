@@ -126,6 +126,8 @@ Book-dependent AI responses should preserve source scope: book, chapter, page ra
 - `POST /books/{book_id}/process`
 - `GET /books/{book_id}/chapters`
 - `POST /learning-goals`
+- `GET /learning-goals/active`
+- `PUT /learning-goals/{goal_id}/books`
 - `POST /analysis/book-profile`
 - `POST /analysis/compare-books`
 - `POST /analysis/learning-path`
@@ -152,6 +154,14 @@ Frontend: Vitest + React Testing Library for import flow, processing state, comp
 ## Scope Stop Rule
 
 Return to PLAN if implementation starts requiring vector DB, embeddings, RAG, distributed workers, multi-user auth, realtime collaboration, cloud architecture, or autonomous agents.
+
+## M3 learning-goal decisions
+
+M3 implements FR-012–013 only. `learning_goals` stores UUID, bounded title and optional description, active state, and UTC created/updated timestamps. `learning_goal_books` is a cascading many-to-many association with a composite primary key. A SQLite partial unique index permits at most one active goal.
+
+Creating a goal requires 3–5 distinct existing books and atomically deactivates the prior active goal. Inactive goals are retained as read-only history; M3 has no drafts, history UI, reactivation, deletion, or title/description editing. The active goal's complete selection may be replaced with another valid 3–5-book set. Book processing state does not affect selection.
+
+Goal mutations share the library lock with import, processing, correction, and deletion. Deletion is rejected while a book belongs to the active goal, so the active selection cannot silently become invalid. Associations belonging only to inactive goals cascade when their book is deleted.
 
 ## M0 foundation decisions
 

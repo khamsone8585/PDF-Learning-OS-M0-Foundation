@@ -2,7 +2,7 @@ from pathlib import Path
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 
-REVISION = '0002_pdf_processing'
+REVISION = '0003_learning_goals'
 
 
 def migration_config():

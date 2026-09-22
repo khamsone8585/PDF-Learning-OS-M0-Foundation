@@ -4,11 +4,15 @@ import Library from './Library'
 import { deleteBook, getBook, getChapters, importBook, LibraryError, listBooks,
   processBook, updateChapters } from '../../api/books'
 import type { Book } from '../../api/books'
+import { getActiveGoal } from '../../api/learningGoals'
 
 vi.mock('../../api/books', async (original) => ({
   ...await original<typeof import('../../api/books')>(),
   listBooks: vi.fn(), getBook: vi.fn(), importBook: vi.fn(), deleteBook: vi.fn(),
   getChapters: vi.fn(), processBook: vi.fn(), updateChapters: vi.fn(),
+}))
+vi.mock('../../api/learningGoals', () => ({
+  getActiveGoal: vi.fn(), createGoal: vi.fn(), replaceGoalBooks: vi.fn(),
 }))
 const book: Book = { id: '00000000-0000-4000-8000-000000000001', title: 'Algorithms',
   original_filename: 'algorithms.pdf', author: null, edition: null, year: null,
@@ -17,6 +21,7 @@ const book: Book = { id: '00000000-0000-4000-8000-000000000001', title: 'Algorit
   processed_at: null, has_processed_content: false, toc_status: null }
 
 beforeEach(() => {
+  vi.mocked(getActiveGoal).mockReset().mockResolvedValue(null)
   vi.mocked(listBooks).mockReset().mockResolvedValue([])
   vi.mocked(getBook).mockReset().mockResolvedValue(book)
   vi.mocked(importBook).mockReset().mockResolvedValue(book)

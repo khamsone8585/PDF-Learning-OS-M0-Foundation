@@ -4,6 +4,15 @@ Only record completed and verified work.
 
 ## Unreleased
 
+### M3 — Learning Goals — 2026-09-22
+
+- Added one-active-goal persistence with bounded title and optional description, inactive history, UTC timestamps, and a cascading many-to-many association for 3–5 distinct existing books.
+- Added atomic active-goal replacement, complete selected-book updates, explicit validation for invalid/duplicate/missing IDs, and protected deletion that prevents silently invalidating the active goal.
+- Added `POST /learning-goals`, `GET /learning-goals/active`, and `PUT /learning-goals/{goal_id}/books`, plus an accessible browser flow for creation, active display, selection bounds, replacement, and starting a new goal.
+- Verified Alembic revision `0003_learning_goals (head)` on fresh and populated-M2 databases, including repeated upgrade safety, exact constraints/indexes, and preservation of existing books, pages, chapters, metadata, and filesystem artifacts.
+- Verified 98 backend tests, 43 frontend tests, dependency consistency, lint, typecheck, build, live API restart persistence, single-active history, invalid-selection handling, deletion integrity, and unrelated M2 processed-content preservation.
+- Verified the complete real-browser M3 lifecycle in Google Chrome with isolated disposable data. No learner data was modified, no M4+ behavior or new dependency was added, and no commit or push was performed during certification.
+
 ### M2 — PDF Processing — 2026-09-22
 
 - Added exact per-page PyMuPDF text extraction with immutable UTF-8 artifacts, 1-based physical page references, source digest validation, and durable processing/error state.

@@ -9,6 +9,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.book import Book, Chapter, Page
+from app.models.learning_goal import LearningGoal, LearningGoalBook
 from app.schemas.book import BookResponse
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import Storage, sync_directory
@@ -175,6 +176,13 @@ class Library:
                     if book.processing_status == 'processing':
                         raise LibraryError(409, 'processing_in_progress',
                                            'Wait for PDF processing to finish before deleting this book.')
+                    selected = session.scalar(select(LearningGoalBook.goal_id).join(
+                        LearningGoal, LearningGoal.id == LearningGoalBook.goal_id).where(
+                            LearningGoalBook.book_id == book_id,
+                            LearningGoal.is_active.is_(True)))
+                    if selected is not None:
+                        raise LibraryError(409, 'book_in_active_goal',
+                                           'Replace this book in the active learning goal before deleting it.')
                     if self.storage.path('books', book_id).exists():
                         self.storage.move('books', '.trash', book_id)
                     session.delete(book)

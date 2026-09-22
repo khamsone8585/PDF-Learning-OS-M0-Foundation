@@ -276,7 +276,8 @@ def test_upgrade_existing_m1_book_defaults_to_unprocessed():
     engine.dispose()
     command.upgrade(migration_config(), 'head')
     engine = create_database_engine(database_path())
-    assert sorted(inspect(engine).get_table_names()) == ['alembic_version', 'books', 'chapters', 'pages']
+    assert sorted(inspect(engine).get_table_names()) == [
+        'alembic_version', 'books', 'chapters', 'learning_goal_books', 'learning_goals', 'pages']
     with Session(engine) as session:
         assert session.get(Book, book_id).processing_status == 'unprocessed'
     engine.dispose()

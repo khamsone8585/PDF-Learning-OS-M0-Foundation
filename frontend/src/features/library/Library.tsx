@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { deleteBook, getBook, importBook, LibraryError, listBooks } from '../../api/books'
 import type { Book } from '../../api/books'
 import ProcessingPanel from '../processing/ProcessingPanel'
+import LearningGoals from '../goals/LearningGoals'
 
 const asError = (error: unknown) => error instanceof LibraryError ? error : new LibraryError('Library request failed.')
 
@@ -15,7 +16,7 @@ export default function Library() {
   const [detailError, setDetailError] = useState('')
   const [importError, setImportError] = useState<LibraryError | null>(null)
   const [deleteError, setDeleteError] = useState<LibraryError | null>(null)
-  const [busy, setBusy] = useState<'import' | 'delete' | 'processing' | null>(null)
+  const [busy, setBusy] = useState<'import' | 'delete' | 'processing' | 'goal' | null>(null)
   const [confirming, setConfirming] = useState(false)
   const [notice, setNotice] = useState('')
   const alive = useRef(false)
@@ -158,7 +159,7 @@ export default function Library() {
     {importError && <div role="alert"><p>{importError.message}</p>
       {importError.existingBookId && <button disabled={busy !== null} onClick={() => void openBook(importError.existingBookId!)}>Open existing book</button>}
     </div>}
-    <p role="status" aria-label="Library activity">{busy === 'import' ? 'Importing…' : busy === 'delete' ? 'Deleting…' : busy === 'processing' ? 'PDF processing is active.' : notice}</p>
+    <p role="status" aria-label="Library activity">{busy === 'import' ? 'Importing…' : busy === 'delete' ? 'Deleting…' : busy === 'processing' ? 'PDF processing is active.' : busy === 'goal' ? 'Learning goal update is active.' : notice}</p>
     <div className="library-toolbar"><h3>Books</h3><button disabled={loading || busy !== null} onClick={() => void refresh()}>Refresh library</button></div>
     {loading && <p role="status">Loading books…</p>}
     {listError && <div role="alert"><p>{listError}</p><button onClick={() => void refresh()}>Retry library</button></div>}
@@ -169,6 +170,8 @@ export default function Library() {
       <span>Processing: {book.processing_status}</span>
       {!book.file_available && <span className="error">Local PDF is missing</span>}
     </li>)}</ul>
+    {!loading && !listError && <LearningGoals books={books} disabled={busy !== null}
+      onBusyChange={active => setBusy(active ? 'goal' : null)} />}
     {detailLoading && <p role="status">Loading book details…</p>}
     {detailError && <p role="alert">{detailError} Select the book again to retry.</p>}
     {detail && <article aria-labelledby="book-heading">

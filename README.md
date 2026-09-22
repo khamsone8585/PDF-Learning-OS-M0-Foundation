@@ -165,3 +165,11 @@ Do not edit these paths. Staged generations are switched atomically through the 
 After updating from M1, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR` used by the server. Existing M1 books become Not processed without changing their metadata or original PDFs.
 
 For M2 verification, use a temporary data directory and disposable PDFs: one multi-page text PDF with nested bookmarks, one text PDF without bookmarks for manual correction, and one image-only PDF for the OCR-required state. Verify reprocessing, backend restart persistence, and final deletion before using learner data.
+
+### Learning goals (M3)
+
+After importing at least three books, use **Learning goal** to create one active goal with a title, optional description, and 3–5 selected books. Processing is not required for selection. Starting another goal keeps the prior goal as inactive history and makes the new goal the only active one.
+
+Use **Change selected books** to replace the active goal's complete selection while keeping 3–5 books. A selected book cannot be deleted from the library until it is replaced in the active goal; the API returns a clear conflict without changing the book or its files.
+
+M3 adds `POST /learning-goals`, `GET /learning-goals/active`, and `PUT /learning-goals/{goal_id}/books`. After updating from M2, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR`; revision `0003_learning_goals` preserves all existing library and extraction data.

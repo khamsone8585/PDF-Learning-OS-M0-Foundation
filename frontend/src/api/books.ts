@@ -75,8 +75,8 @@ function isChapters(value: unknown): value is ChaptersResponse {
     })
 }
 
-async function request(path: string, method: string, signal?: AbortSignal, body?: BodyInit,
-                       timeout?: number, headers?: HeadersInit): Promise<unknown> {
+export async function request(path: string, method: string, signal?: AbortSignal, body?: BodyInit,
+                              timeout?: number, headers?: HeadersInit): Promise<unknown> {
   const mutation = method !== 'GET'
   const controller = new AbortController()
   const abort = () => controller.abort()
