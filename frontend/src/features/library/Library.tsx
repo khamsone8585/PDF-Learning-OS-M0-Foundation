@@ -13,6 +13,7 @@ export default function Library() {
   const [loading, setLoading] = useState(true)
   const [listError, setListError] = useState('')
   const [detail, setDetail] = useState<Book | null>(null)
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
   const [importError, setImportError] = useState<LibraryError | null>(null)
@@ -172,6 +173,7 @@ export default function Library() {
       {!book.file_available && <span className="error">Local PDF is missing</span>}
     </li>)}</ul>
     {!loading && !listError && <LearningGoals books={books} disabled={busy !== null}
+      profileRefreshKey={profileRefreshKey} onOpenBook={id => void openBook(id)}
       onBusyChange={active => setBusy(active ? 'goal' : null)} />}
     {detailLoading && <p role="status">Loading book details…</p>}
     {detailError && <p role="alert">{detailError} Select the book again to retry.</p>}
@@ -187,10 +189,12 @@ export default function Library() {
       <ProcessingPanel book={detail} disabled={busy !== null}
         onBookChange={updateBook} onBusyChange={active => setBusy(active ? 'processing' : null)} />
       <BookProfilePanel book={detail} disabled={busy !== null}
+        onSaved={() => setProfileRefreshKey(value => value + 1)}
         onBusyChange={active => setBusy(active ? 'profile' : null)} />
       {!confirming ? <button ref={remove} disabled={busy !== null || detail.processing_status === 'processing'} onClick={() => setConfirming(true)}>Remove book</button>
         : <div className="delete-confirm" role="group" aria-label="Confirm deletion">
           <p>Remove “{detail.title}”? Its local PDF and library entry will be permanently removed.</p>
+          <p>Saved comparisons containing this book will also be permanently removed.</p>
           <button ref={cancel} disabled={busy !== null} onClick={() => { setConfirming(false); setDeleteError(null); setTimeout(() => remove.current?.focus(), 0) }}>Cancel</button>
           <button disabled={busy !== null} onClick={() => void confirmDelete()}>{deleteError ? 'Retry deletion' : 'Delete book'}</button>
         </div>}

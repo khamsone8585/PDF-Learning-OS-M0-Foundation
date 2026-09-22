@@ -158,7 +158,7 @@ def test_migration_upgrade_and_constraints():
     assert schema_ready(engine)
     assert database_path().stat().st_ino == identity
     assert sorted(inspect(engine).get_table_names()) == [
-        'alembic_version', 'book_profiles', 'books', 'chapters', 'learning_goal_books',
+        'alembic_version', 'book_comparison_books', 'book_comparisons', 'book_profiles', 'books', 'chapters', 'learning_goal_books',
         'learning_goals', 'pages']
     assert len(inspect(engine).get_check_constraints('books')) == 10
     engine.dispose()

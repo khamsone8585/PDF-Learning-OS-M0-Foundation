@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models.book import Book, Chapter, Page
 from app.models.learning_goal import LearningGoal, LearningGoalBook
+from app.models.book_comparison import BookComparison, BookComparisonBook
 from app.schemas.book import BookResponse
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import Storage, sync_directory
@@ -185,6 +186,9 @@ class Library:
                                            'Replace this book in the active learning goal before deleting it.')
                     if self.storage.path('books', book_id).exists():
                         self.storage.move('books', '.trash', book_id)
+                    affected = select(BookComparisonBook.goal_id).where(
+                        BookComparisonBook.book_id == book_id)
+                    session.execute(delete(BookComparison).where(BookComparison.goal_id.in_(affected)))
                     session.delete(book)
                     session.commit()
             except LibraryError:

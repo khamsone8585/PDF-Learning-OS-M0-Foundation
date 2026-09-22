@@ -181,3 +181,24 @@ Open a book's details and use **Book profile** to record its domain, difficulty,
 List fields accept one item per line and reject case-insensitive duplicates and configured item/count limits. At least one profile field is required. Every populated M4 field is labeled as manually entered. Client requests cannot supply provenance, and M4 performs no AI inference, PDF text reading, comparison, role classification, or goal-specific analysis. Any catalog book can be profiled regardless of processing state or whether its original PDF is currently available.
 
 M4 adds `GET /books/{book_id}/profile` and `PUT /books/{book_id}/profile`. After updating from M3, stop the backend and run `python -m alembic upgrade head` with the same `PDF_LEARNING_DATA_DIR`; revision `0004_book_profiles` preserves existing books, extracted content, learning goals, and associations. Deleting a book also removes its profile through the existing database cascade.
+
+### Book comparison (M5)
+
+In the active learning goal, choose **Compare selected books**. Each selected book needs a profile with at least one main topic; readiness messages link to its existing profile panel. Processing is not required. Unrecorded optional facts remain unknown.
+
+The overview and expandable sections compare recorded topics, difficulty, prerequisites, and overlap. Matching only collapses whitespace and ignores case: `ML` does not match `machine learning`. Topic counts describe recorded coverage, not teaching quality or completeness. Empty prerequisites mean “not recorded.”
+
+Choose **Classify books** and assign every book one role with a written rationale:
+
+- CORE: primary resource, not necessarily every chapter.
+- SELECTED CHAPTERS: selected parts covering one or more chosen profile topics; exact chapters come later.
+- REFERENCE: consult as needed.
+- SKIP FOR NOW: defer for this goal.
+
+Explain each book’s relevance, including when unknown. Optionally assess depth and practice with explanations; neither is inferred from difficulty or theory/practice orientation. Optional evidence checkboxes reference profile facts, recorded topics, or pairwise results, not extracted PDF evidence. Confirm review for each book before saving. Multiple or no CORE books are allowed.
+
+One saved comparison is retained per goal. Editing replaces it atomically. Profile or goal-selection changes mark it stale without erasing the old result. **Review with current inputs** carries existing judgments forward for explicit review and flags obsolete references. Refresh also runs on window focus; concurrent edits are rejected rather than overwritten. A failed or ambiguous save preserves the draft and reloads authoritative state without replaying the request. Deleting a book removes saved comparisons containing it; active-goal book deletion remains protected.
+
+API: `GET /learning-goals/{goal_id}/comparison` returns readiness, `input_token`, current preview, saved snapshot, and stale reasons. `PUT` accepts the returned token, `expected_revision` (null for first save), and the complete selected book assessments, each with `reviewed: true`. It returns the same envelope. Missing goals return 404; inactive/unready goals, changed inputs, or revision conflicts return 409; invalid fields/references return 422. Field shapes and persistence rules are documented in `ARCHITECTURE.md` and the backend OpenAPI schema.
+
+After updating from M4, stop the backend and run `python -m alembic upgrade head` before restarting. The new head `0005_book_comparisons` preserves all M1–M4 rows and artifacts. For disposable verification, set `PDF_LEARNING_DATA_DIR` to a fresh temporary directory before migrating or starting the backend. M5 adds no AI, provider keys, semantic matching, new dependencies, learning path, chapter sequencing, or study plan.

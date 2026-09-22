@@ -4,17 +4,21 @@ import type { Book } from '../../api/books'
 import { LibraryError } from '../../api/books'
 import { createGoal, getActiveGoal, replaceGoalBooks } from '../../api/learningGoals'
 import type { LearningGoal } from '../../api/learningGoals'
+import BookComparisonPanel from '../comparisons/BookComparisonPanel'
 
 interface Props {
   books: Book[]
   disabled: boolean
   onBusyChange?: (busy: boolean) => void
+  profileRefreshKey?: number
+  onOpenBook?: (id: string) => void
 }
 
 const asError = (error: unknown) => error instanceof LibraryError
   ? error : new LibraryError('Learning goal request failed.')
 
-export default function LearningGoals({ books, disabled, onBusyChange }: Props) {
+export default function LearningGoals({ books, disabled, onBusyChange, profileRefreshKey, onOpenBook }: Props) {
+  const [showComparison, setShowComparison] = useState(false)
   const [goal, setGoal] = useState<LearningGoal | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -117,6 +121,9 @@ export default function LearningGoals({ books, disabled, onBusyChange }: Props) 
       </li>)}</ul>
       <button disabled={formDisabled} onClick={beginReplace}>Change selected books</button>
       <button disabled={formDisabled} onClick={beginCreate}>Start a new goal</button>
+      <button disabled={formDisabled} onClick={() => setShowComparison(true)}>Compare selected books</button>
+      {showComparison && <BookComparisonPanel key={goal.id} goal={goal} disabled={disabled}
+        refreshKey={profileRefreshKey} onBusyChange={onBusyChange} onOpenBook={onOpenBook} />}
     </div>}
     {!loading && !loadError && mode === 'create' && goal &&
       <p className="goal-warning">Creating this goal will make “{goal.title}” inactive.</p>}

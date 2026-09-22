@@ -9,6 +9,7 @@ interface Props {
   book: Book
   disabled: boolean
   onBusyChange: (busy: boolean) => void
+  onSaved?: () => void
 }
 
 type Form = Record<keyof BookProfileInput, string>
@@ -68,7 +69,7 @@ function validate(value: BookProfileInput) {
   return ''
 }
 
-export default function BookProfilePanel({ book, disabled, onBusyChange }: Props) {
+export default function BookProfilePanel({ book, disabled, onBusyChange, onSaved }: Props) {
   const [profile, setProfile] = useState<BookProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -117,12 +118,13 @@ export default function BookProfilePanel({ book, disabled, onBusyChange }: Props
       const result = await putBookProfile(book.id, value, controller.signal)
       if (controller.signal.aborted) return
       setProfile(result); setForm(toForm(result)); setEditing(false); setNotice('Book profile saved.')
+      onSaved?.()
       setTimeout(() => heading.current?.focus(), 0)
     } catch (caught) {
       if (controller.signal.aborted) return
       const failure = asError(caught)
       setSaveError(failure.message)
-      if (failure.code === 'outcome_unknown' && await load()) setEditing(false)
+      if (failure.code === 'outcome_unknown' && await load()) { setEditing(false); onSaved?.() }
     } finally {
       if (mutation.current === controller) mutation.current = null
       if (!controller.signal.aborted) { setSaving(false); onBusyChange(false) }

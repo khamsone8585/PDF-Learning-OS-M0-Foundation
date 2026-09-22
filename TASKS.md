@@ -28,7 +28,7 @@ Create one active learning goal and associate 3–5 books.
 Difficulty, prerequisites, topics, strengths, weaknesses, theory/practice orientation, and editable profile.
 
 ## M5 — Book Comparison
-**Status:** TODO
+**Status:** DONE
 
 Compare overlap, prerequisites, difficulty, coverage, classify book role, and explain rationale.
 
@@ -553,7 +553,7 @@ Final acceptance:
 - All temporary test data was isolated from learner data, and both servers were stopped. No commit or push was performed.
 
 
-## Active Task
+## Historical M4 task
 
 Task: M4 — Book Profiles
 Milestone: M4
@@ -626,3 +626,80 @@ Final acceptance:
 - All ten M4 acceptance criteria and FR-014–FR-015 pass. M4 remains manual-first and adds no AI provider call, automatic generation, comparison, overlap, book roles, learning-path behavior, RAG, embeddings, dependency, or M5+ functionality.
 - Defects found/fixed during TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
 - Learner data was not read or modified. All test PDFs, databases, extracted artifacts, profiles, and goals were isolated disposable data. No commit or push was performed.
+
+## Active Task
+
+Task: M5 — Book Comparison
+Milestone: M5
+Mode: TEST
+Status: DONE
+Approval: User approved the complete M5 plan in this conversation.
+
+Goal: FR-016–018 only: goal-specific comparison of 3–5 selected books with deterministic profile matching and explicitly manual roles, relevance, rationale, and optional depth/practice assessments. No M2 content read, AI, semantic matching, scoring, or M6 sequencing.
+
+Approved readiness: active goal, 3–5 existing selected books, each with an M4 profile and nonblank topics. Other missing fields remain unknown; empty prerequisites mean not recorded. Normalize topics/prerequisites by whitespace collapse and Unicode casefold, preserving originals. Coverage and pairwise intersections/differences are derived; difficulty uses existing ordinal categories; orientation is distinct from actual practice content.
+
+Approved judgments: every selected book has exactly one core/selected_chapters/reference/skip_for_now role and 1–2,000-character rationale. Required relevance category high/partial/low/unknown and 1–1,000-character explanation. Optional depth overview/working_detail/deep_treatment and practice limited/some/substantial each require an explanation. Focus topics (max 50) must belong to that book, and selected_chapters requires at least one. Optional unique evidence references (max 20) target populated profile fields, own topics, or own pairwise facts. Provenance is server-owned and manual for judgments; each book requires explicit review confirmation.
+
+Approved persistence: 0005_book_comparisons adds one snapshot per goal and snapshot-book membership. Capture goal/profile inputs, provenance, deterministic results, algorithm version, timestamps, revision, and canonical input fingerprint. GET is read-only; PUT atomically replaces complete snapshot after readiness, token, revision, and judgment validation. Profile/selection changes mark saved data stale; review carries judgments by book ID without silently replacing them. Inactive goals are read-only. Deleting a book atomically deletes all affected snapshots after existing deletion guards; unrelated data remains intact.
+
+Approved API: GET/PUT /learning-goals/{goal_id}/comparison. Envelope: goal_id, is_active, readiness/issues, input_token, current preview, saved snapshot, stale and stale_reasons. PUT: input_token, expected_revision, exact selected books with all manual fields and reviewed=true. Missing goal 404; inactive/unready/input-changed/revision-conflict 409; malformed fields/references 422; safe storage failures 503.
+
+Approved UX: comparison within active goal; readiness links open existing profile editor, compact overview plus book details and expandable coverage/pairs, labeled provenance and unknowns, complete editing, explicit stale review, keyboard/status/focus/error/busy handling. Refresh after goal/profile changes and window focus; preserve drafts and reload unknown outcomes without replay. Warn deletion removes affected comparisons.
+
+Acceptance criteria:
+1. Deterministic comparisons work for three and five ready selected books.
+2. Missing profiles/topics block comparison; other missing facts remain unknown.
+3. All seven dimensions have accurate source labels without semantic claims.
+4. Every saved book has one manual role and rationale; selected_chapters has valid focus topics.
+5. Provenance, computed results and captured inputs cannot be forged by clients.
+6. Atomic saves persist across restart and reject stale inputs/concurrent overwrites.
+7. Changes require explicit review and preserve the old snapshot until replacement.
+8. Book deletion removes affected snapshots with rollback and unrelated data intact.
+9. Accessible UI covers readiness/edit/cancel/error/busy/focus/unknown outcomes.
+10. Migration preserves M1–M4 data and all existing regressions pass.
+11. No new dependencies, AI, M6 stages/order/chapter selections/study plans or later scope.
+
+Implementation/tests: migration/models/typed contracts/pure comparisons; shared-lock service/routes/deletion; frontend transport/panel/refresh integration; documentation. Verify normalization and unknowns, all dimensions/roles/evidence, atomicity/conflicts, stale/review, restart/deletion, populated M4 migration, frontend flows and full backend pytest/pip check, frontend lint/test/typecheck/build, and diff check using temporary data only. CODE ends READY FOR TEST; CHANGELOG remains unchanged until formal TEST.
+
+CODE implementation and verification — 2026-09-22:
+- Added Alembic revision `0005_book_comparisons`, the one-per-goal snapshot model and exact snapshot-book membership table. Runtime readiness now requires this head. Fresh/repeated upgrades, populated-M4 preservation, database constraints, downgrade on disposable data, cascading membership cleanup, and restart persistence are covered by isolated tests.
+- Added strict comparison schemas, deterministic Unicode-whitespace/casefold normalization, exact topic/prerequisite matching, seven-dimension previews, canonical input fingerprints, typed snapshot validation, optimistic input/revision checks, and atomic complete replacement. Saved manual roles, rationales, relevance, optional depth/practice, focus topics, evidence references, review confirmation, and server-owned provenance are validated without reading M2 content or invoking AI.
+- Added thin GET/PUT comparison routes, active/inactive/readiness behavior, stale snapshot reporting, safe storage errors, and transactional deletion of every affected snapshot after the existing active-goal deletion guard. Rollback, concurrent writes, selection/profile changes, no-op timestamp invalidation, reprocessing independence, unrelated data preservation, malformed/corrupt storage, and client forgery are covered.
+- Added the active-goal comparison UI with readiness links, source labels, explicit unknowns, overview/details, exact-match limitations, create/edit/cancel/save, stale review and judgment carryover, invalid-reference flags, profile/goal/focus refreshes, busy/error/status/focus handling, responsive presentation, and unknown-outcome reload without mutation replay. Book deletion warns that affected saved comparisons are removed.
+- Updated `ARCHITECTURE.md` and `README.md` for M5 schema, API, matching, provenance, invalidation, UI, deletion, migration, and M6 handoff boundaries. No dependency or lockfile changed. `CHANGELOG.md` remains unchanged pending formal TEST.
+- Focused defects fixed during CODE verification: TypeScript runtime-validator narrowing was corrected; M5 table expectations were added to M1/M2 migration regressions; ambiguous storage-error saves now reload authoritative comparison state while preserving the draft; stored snapshots now revalidate membership, profile ownership, evidence targets, and server-owned provenance. Regression coverage was added for each affected behavior.
+- Full backend gate: `.venv/bin/python -m pytest -q` PASS — 150 passed, 0 failed; `.venv/bin/python -m pip check` PASS — no broken requirements.
+- Full frontend gate: `npm test -- --run` PASS — 10 test files, 68 tests; `npm run lint` PASS; `npm run typecheck` PASS; `npm run build` PASS with Vite 7.3.6 and 40 transformed modules.
+- `git diff --check` PASS. Scope inspection confirms M1–M4 regressions remain passing and no AI/provider, RAG, embedding/vector, semantic matching, chapter selection/order, dependency graph, learning path, stage, schedule, or study-plan behavior was introduced.
+- Known non-failing warnings are unchanged upstream/environment notices: seven backend warnings (Starlette HTTPX deprecation, AnyIO portal alias, and PyMuPDF SWIG deprecations) plus the unwritable pip-cache notice. No known M5 implementation blocker remains.
+- Formal isolated live HTTP and real-browser certification remain for MODE: TEST. M5 is READY FOR TEST, not DONE. No learner data was used, no commit or push was performed, and M6 remains TODO.
+
+## M5 final TEST certification — 2026-09-22
+
+Result: PASS. Milestone M5 / Mode TEST / Status DONE. M0–M4 remain DONE and M6 remains TODO.
+
+Migration and automated verification:
+- Fresh and repeated isolated Alembic upgrades reached `0005_book_comparisons (head)`. The populated-M4 upgrade/downgrade test preserved all M1–M4 books, pages, chapters, profiles, goals, associations, original PDFs, and extracted artifacts.
+- Verified exactly the expected M0–M5 tables: `books`, `pages`, `chapters`, `learning_goals`, `learning_goal_books`, `book_profiles`, `book_comparisons`, `book_comparison_books`, and `alembic_version`. Comparison primary keys, positive-revision/fingerprint checks, snapshot ownership, composite membership uniqueness, cascading foreign keys, and `PRAGMA foreign_key_check` passed. No M6+ schema exists.
+- Backend `.venv/bin/python -m pytest -q`: PASS — 150 passed, 0 failed, with seven unchanged upstream Starlette, AnyIO, and PyMuPDF warnings. `.venv/bin/python -m pip check`: PASS — no broken requirements; the environment-only unwritable pip-cache notice remains non-failing.
+- Frontend `npm test -- --run`: PASS — 10 files and 68 tests. `npm run lint`, `npm run typecheck`, and `npm run build`: PASS; Vite 7.3.6 transformed 40 modules. `git diff --check`: PASS.
+- Automated coverage explicitly passed for ready three- and five-book comparisons; missing/incomplete profiles; exact Unicode whitespace/casefold normalization; disjoint, partial, and shared topic sets; difficulty, prerequisites, orientation versus practice, relevance, all four roles, rationale/review requirements, focus topics, evidence validation, server-owned provenance, atomicity, restart persistence, stale profile/selection inputs, reprocessing independence, concurrent/ambiguous saves, rollback, deletion cleanup, and M1–M4 regressions.
+
+Live HTTP integration:
+- Used only `/private/tmp/pdf-learning-os-m5-test.xnIEps`. Created five disposable PDFs, complete M4 profiles, one active goal, processed content, and reviewed comparisons. Generated/read revision 1, restarted the backend, and confirmed the complete snapshot persisted exactly.
+- Verified normalized overlap and no-overlap pairs, difficulty/prerequisite differences, profile orientation distinct from manual practice, manual relevance/depth/practice, three roles with rationales, optional evidence, and server-owned manual provenance. Forged provenance and invalid evidence returned 422 and left the saved snapshot unchanged.
+- Reprocessing left the comparison current as approved. A profile edit marked revision 1 stale; its old input token returned 409 `comparison_inputs_changed`; explicit review produced current revision 2. A goal-selection change retained revision 2 as stale; an exact reviewed replacement produced revision 3.
+- Changed the selection again so a snapshot member was no longer active, deleted that book, and confirmed the affected comparison and memberships were removed transactionally. Four unrelated books, their profiles, the processed book/pages/chapters, active goal, original files, and M1/M2/M3 APIs remained intact. The deleted book returned 404 and database foreign-key checks remained clean.
+
+Real-browser verification:
+- Google Chrome against the same isolated data verified a ready three-book comparison, side-by-side topic/difficulty/prerequisite/orientation/overlap facts, exact-match limitation text, explicit unknowns, and separately labeled profile inputs, derived facts, and manual judgments. No dependency order, stages, chapter sequence, study plan, or other M6 UI appeared.
+- Created a complete comparison using CORE, SELECTED CHAPTERS with a valid focus topic, and REFERENCE; each had a rationale and relevance explanation, with optional depth/practice assessments and evidence. Native required-field validation blocked an incomplete save without losing the draft. The UI saved revision 1 and visibly retained all roles, rationales, and provenance.
+- Edited a selected book profile in Chrome. The comparison immediately showed the saved snapshot as stale while preserving it. Review carried judgments by book ID, reset all review confirmations, exposed the new derived topic, and saved revision 2 only after explicit confirmation.
+- Replaced one goal book. The UI showed revision 2 stale, excluded the removed book, retained matching judgments, started the new book unclassified, and saved reviewed revision 3. A full browser reload preserved revision 3, the revised three-book selection, all roles, and rationales.
+- Keyboard Tab reached comparison controls; native labeled controls, headings, table semantics, details disclosure, status/error regions, and focus restoration were exposed through Chrome accessibility state. No application console/runtime error occurred. Console warnings/errors came only from installed Chrome extensions; Vite/React emitted normal development messages, including one transient Vite reconnect notice during tool-driven tab refresh.
+
+Final acceptance:
+- All eleven M5 acceptance criteria and FR-016–FR-018 pass. M5 remains deterministic/manual-first and adds no AI provider call, automatic classification, semantic matching, score, RAG, embedding, vector database, dependency order, stage, chapter sequence, learning path, `STUDY_PLAN.md`, or M7+ behavior.
+- Defects found/fixed during formal TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
+- Learner data was not read or modified. All databases, PDFs, profiles, goals, processed artifacts, and comparisons were isolated disposable data. Both test servers and the isolated Chrome tab were stopped/closed. No commit or push was performed.

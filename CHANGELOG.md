@@ -4,6 +4,17 @@ Only record completed and verified work.
 
 ## Unreleased
 
+### M5 — Book Comparison — 2026-09-22
+
+- Added one reproducible comparison snapshot per learning goal, with captured goal/profile inputs, exact deterministic topic and prerequisite matching, difficulty comparisons, coverage/overlap facts, input fingerprints, optimistic revisions, and stale-state detection.
+- Added explicit manual role, rationale, relevance, optional depth/practice, focus-topic, evidence-reference, and review-confirmation contracts with server-owned provenance. Clients cannot forge captured inputs, derived results, or provenance.
+- Added `GET /learning-goals/{goal_id}/comparison` and complete atomic `PUT`, readiness issues for missing profiles/topics, inactive/stale/conflict handling, safe corrupt-storage behavior, and transactional cleanup of snapshots affected by book deletion.
+- Added an accessible active-goal comparison interface with readiness links, overview and detailed facts, source labels, explicit unknowns, exact-matching limitations, create/edit/cancel/save, stale review with judgment carryover, invalid-reference feedback, responsive tables, and profile/selection/focus refresh behavior.
+- Verified Alembic revision `0005_book_comparisons (head)` on fresh, repeated, and populated-M4 migrations, including exact schema constraints, ownership/cascades, rollback, and preservation of all M1–M4 data and artifacts. No M6+ schema exists.
+- Verified 150 backend tests, 68 frontend tests, dependency consistency, lint, typecheck, production build, migration checks, concurrent/ambiguous updates, restart persistence, stale profile/selection inputs, reprocessing independence, deletion cleanup, and M1–M4 regressions.
+- Verified the complete real HTTP and Google Chrome M5 workflows using isolated disposable data: comparison creation, all seven dimensions, manual classifications/rationales/provenance, validation preservation, backend/browser restart persistence, profile and selection staleness, explicit reviewed replacements through revision 3, keyboard/accessibility behavior, and unrelated-data integrity.
+- No M5 defect required a TEST change. No learner data was modified. No AI provider, automatic classification, semantic matching, scoring, RAG, embeddings, vector database, dependency ordering, stages, chapter sequence, learning path, study plan, M6+, new dependency, commit, or push was introduced.
+
 ### M4 — Book Profiles — 2026-09-22
 
 - Added one current global profile per book with domain, difficulty, prerequisites, main topics, theory/practice orientation, strengths, weaknesses, suggested use, UTC timestamps, and cascading book ownership.
