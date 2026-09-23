@@ -12,6 +12,8 @@ from app.api.health import router
 from app.api.learning_goals import router as learning_goals_router
 from app.api.book_profiles import router as book_profiles_router
 from app.api.book_comparisons import router as book_comparisons_router
+from app.api.library_intelligence import router as library_intelligence_router
+from app.api.curriculum_triage import router as curriculum_triage_router
 from app.db.migrations import schema_ready
 from app.services.library import Library
 from app.services.library_errors import LibraryError, storage_error
@@ -19,6 +21,8 @@ from app.services.library_storage import DataLock
 from app.services.learning_goals import LearningGoalService
 from app.services.book_profiles import BookProfileService
 from app.services.book_comparisons import BookComparisonService
+from app.services.library_intelligence import LibraryIntelligenceService
+from app.services.curriculum_triage import CurriculumTriageService
 from app.services.processing import PDFProcessingService
 from app.config import database_path
 from app.db.connection import create_database_engine
@@ -39,6 +43,8 @@ async def lifespan(application: FastAPI):
     application.state.learning_goals = None
     application.state.book_profiles = None
     application.state.book_comparisons = None
+    application.state.library_intelligence = None
+    application.state.curriculum_triage = None
     application.state.library_error = storage_error()
     if engine is not None:
         try:
@@ -51,6 +57,8 @@ async def lifespan(application: FastAPI):
             application.state.learning_goals = LearningGoalService(application.state.library)
             application.state.book_profiles = BookProfileService(application.state.library)
             application.state.book_comparisons = BookComparisonService(application.state.library)
+            application.state.library_intelligence = LibraryIntelligenceService(application.state.library)
+            application.state.curriculum_triage = CurriculumTriageService(application.state.library)
             application.state.library_error = None
         except LibraryError as exc:
             application.state.library_error = exc
@@ -85,6 +93,8 @@ def create_app() -> FastAPI:
     application.include_router(learning_goals_router)
     application.include_router(book_profiles_router)
     application.include_router(book_comparisons_router)
+    application.include_router(library_intelligence_router)
+    application.include_router(curriculum_triage_router)
     return application
 
 

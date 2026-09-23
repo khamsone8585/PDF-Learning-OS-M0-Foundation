@@ -51,6 +51,15 @@ dd { margin: 0 0 12px; overflow-wrap: anywhere; }
 .comparison-scroll table { width: 100%; border-collapse: collapse; }
 .comparison-scroll th, .comparison-scroll td { padding: 8px; text-align: left; border: 1px solid #82958b; }
 .comparison-scroll caption { text-align: left; font-weight: 600; padding: 12px 0; }
+.library-intelligence { margin-top: 24px; background: #f6f8f5; }
+.library-intelligence h3, .library-intelligence h4 { margin-top: 0; }
+.intelligence-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.intelligence-books { list-style: none; padding: 0; }
+.intelligence-books li, .relation-card, .triage-book { padding: 12px; margin: 10px 0; border: 1px solid #d5ded5; border-radius: 6px; background: #fff; }
+.intelligence-books span { display: block; }
+.intelligence-check { display: flex; align-items: baseline; gap: 10px; }
+.intelligence-check input { width: auto; flex-shrink: 0; }
+.triage-book fieldset { margin: 12px 0; padding: 12px; border: 1px solid #82958b; }
 @media (max-width: 640px) {
   .comparison-scroll thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .comparison-scroll table, .comparison-scroll tbody, .comparison-scroll tr { display: block; }

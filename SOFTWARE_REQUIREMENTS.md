@@ -89,6 +89,13 @@ OCR is out of scope for V0.1.
 - **FR-046** Export `PROGRESS.md`.
 - **FR-047** Export a teaching note when needed.
 
+### Library Intelligence & Curriculum Triage
+- **FR-048** Show a compact library map with profile and processing readiness for a 30–100-book local library.
+- **FR-049** Identify exact-content duplicates, deterministic bibliographic duplicate/edition candidates, and recorded-topic redundancy without automatic deletion.
+- **FR-050** Derive explicit prerequisite-provider relationships from exact normalized profile topics and domains while preserving unresolved prerequisites.
+- **FR-051** Maintain one editable curriculum-triage session with a structured learning intent and a 0–many candidate-book snapshot.
+- **FR-052** Produce an evidence-labeled deterministic 3–5-book shortlist and require learner confirmation before atomically creating the active study set and reviewed comparison.
+
 ## 4. Non-Functional Requirements
 
 - **NFR-001 Local First:** PDF library, extracted content, and progress remain local.

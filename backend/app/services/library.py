@@ -5,12 +5,13 @@ from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.models.book import Book, Chapter, Page
 from app.models.learning_goal import LearningGoal, LearningGoalBook
 from app.models.book_comparison import BookComparison, BookComparisonBook
+from app.models.library_intelligence import CurriculumTriage, CurriculumTriageBook
 from app.schemas.book import BookResponse
 from app.services.library_errors import LibraryError, storage_error
 from app.services.library_storage import Storage, sync_directory
@@ -189,6 +190,14 @@ class Library:
                     affected = select(BookComparisonBook.goal_id).where(
                         BookComparisonBook.book_id == book_id)
                     session.execute(delete(BookComparison).where(BookComparison.goal_id.in_(affected)))
+                    applied_triages = select(CurriculumTriageBook.triage_id).join(
+                        CurriculumTriage, CurriculumTriage.id == CurriculumTriageBook.triage_id).where(
+                            CurriculumTriageBook.book_id == book_id,
+                            CurriculumTriage.status == 'applied')
+                    session.execute(update(CurriculumTriage).where(
+                        CurriculumTriage.id.in_(applied_triages)).values(
+                            status='invalidated', updated_at=datetime.now(timezone.utc).isoformat(
+                                timespec='microseconds').replace('+00:00', 'Z')))
                     session.delete(book)
                     session.commit()
             except LibraryError:

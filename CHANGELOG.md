@@ -4,6 +4,18 @@ Only record completed and verified work.
 
 ## Unreleased
 
+### M5.5 — Library Intelligence & Curriculum Triage — 2026-09-23
+
+- Added a compact, searchable, filterable library map for 30–100 books with profile readiness, stable domain/topic grouping, processing context, and bounded relationship counts without reading PDF content.
+- Added deterministic exact bibliographic duplicate/related-edition candidates, recorded-topic equivalence/subset/overlap/complementarity, unique-topic facts, exact prerequisite providers, unresolved prerequisites, and persisted learner relation reviews. Hashes remain private and no book is automatically deleted or merged.
+- Added persisted curriculum-triage sessions with structured intent, whole-library or selected candidate snapshots, input/scope fingerprints, revisions, explicit synchronization, retained applied history, staleness/conflict handling, and a score-free evidence-labeled shortlist.
+- Added explicit manual confirmation of 3–5 Books Now with CORE/SELECTED/REFERENCE decisions, LATER exclusion, complete M5-compatible reviewed judgments, and atomic creation of the new active M3 goal plus revision-1 M5 comparison.
+- Added Alembic revision `0006_library_intelligence` with curriculum-triage membership and library relation-review persistence, cascading cleanup, single-draft enforcement, applied-history invalidation, and preservation of all M1–M5 data.
+- Verified fresh, repeated, and populated-M5 migrations; 163 backend tests; 12 frontend test files / 76 tests; pip consistency; lint; typecheck; production build; clean diff checks; stable batched 30/100-book maps; restart persistence; optimistic conflicts; rollback; deletion integrity; and all M1–M5 regressions.
+- Verified isolated live HTTP and Google Chrome workflows with 30+ disposable books: readiness queues, duplicate/edition review, overlap and prerequisite evidence, deterministic shortlist, stale-profile review, exact three- and five-book confirmations, active-goal/M5 handoff, reload persistence, keyboard behavior, and clean application console output.
+- Fixed the formal-TEST presentation gap by explicitly explaining that CORE, SELECTED, and REFERENCE are included in Books Now while unselected candidates are LATER; added regression coverage and reran the complete quality gates.
+- No learner data was accessed or modified. No AI provider, full-PDF LLM submission, semantic matching, RAG, embeddings, vector database, autonomous agents, M6 ordering/stages/chapter sequence, 90-day schedule, `STUDY_PLAN.md`, M7+ behavior, dependency change, commit, or push was introduced.
+
 ### M5 — Book Comparison — 2026-09-22
 
 - Added one reproducible comparison snapshot per learning goal, with captured goal/profile inputs, exact deterministic topic and prerequisite matching, difficulty comparisons, coverage/overlap facts, input fingerprints, optimistic revisions, and stale-state detection.

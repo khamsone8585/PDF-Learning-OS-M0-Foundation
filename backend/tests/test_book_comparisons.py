@@ -317,10 +317,12 @@ def test_populated_m4_migration_and_disposable_downgrade(monkeypatch):
     command.upgrade(migration_config(), 'head')
     command.upgrade(migration_config(), 'head')
     with engine.connect() as connection:
-        assert connection.scalar(text('SELECT version_num FROM alembic_version')) == '0005_book_comparisons'
+        assert connection.scalar(text('SELECT version_num FROM alembic_version')) == '0006_library_intelligence'
         assert {table: connection.execute(text(f'SELECT * FROM {table}')).all() for table in tables} == before
     assert all(p.read_bytes() == value for p, value in artifacts.items())
-    assert set(inspect(engine).get_table_names()) == set(tables) | {'alembic_version', 'book_comparisons', 'book_comparison_books'}
+    assert set(inspect(engine).get_table_names()) == set(tables) | {
+        'alembic_version', 'book_comparisons', 'book_comparison_books',
+        'curriculum_triages', 'curriculum_triage_books', 'library_relation_reviews'}
     with pytest.raises(IntegrityError), engine.begin() as connection:
         connection.execute(text("INSERT INTO book_comparisons VALUES (:id,0,:token,'v','{}','now','now')"),
                            {'id': goal['id'], 'token': 'a' * 64})

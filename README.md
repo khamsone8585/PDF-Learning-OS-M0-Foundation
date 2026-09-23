@@ -8,7 +8,7 @@ The goal is not to summarize many books quickly. The goal is to convert a person
 
 ## V0.1 Goal
 
-Given 3–5 technical PDF books around one learning goal, the system should:
+Given a local library of up to roughly 30–100 technical PDF books, the system first maps recorded profiles and helps the learner triage a confirmed 3–5-book study set around one learning goal. For that confirmed set, the system should:
 
 1. Import and catalog PDFs.
 2. Extract metadata and table of contents.
@@ -202,3 +202,17 @@ One saved comparison is retained per goal. Editing replaces it atomically. Profi
 API: `GET /learning-goals/{goal_id}/comparison` returns readiness, `input_token`, current preview, saved snapshot, and stale reasons. `PUT` accepts the returned token, `expected_revision` (null for first save), and the complete selected book assessments, each with `reviewed: true`. It returns the same envelope. Missing goals return 404; inactive/unready goals, changed inputs, or revision conflicts return 409; invalid fields/references return 422. Field shapes and persistence rules are documented in `ARCHITECTURE.md` and the backend OpenAPI schema.
 
 After updating from M4, stop the backend and run `python -m alembic upgrade head` before restarting. The new head `0005_book_comparisons` preserves all M1–M4 rows and artifacts. For disposable verification, set `PDF_LEARNING_DATA_DIR` to a fresh temporary directory before migrating or starting the backend. M5 adds no AI, provider keys, semantic matching, new dependencies, learning path, chapter sequencing, or study plan.
+
+### Library intelligence and curriculum triage (M5.5)
+
+Open **Library intelligence** below the book list to work with a 30–100-book candidate library. The compact map is searchable and filterable by readiness, domain, topic, difficulty, orientation, processing state, and current candidate membership. Processing and TOC state are informational: triage uses only catalog metadata and manually recorded M4 profiles. The profile-readiness queue opens the existing profile editor and advances to another incomplete book after a save.
+
+Duplicate, edition, recorded-topic, and prerequisite sections use exact normalized metadata/profile matching. Whitespace is collapsed and case is ignored; punctuation, aliases, synonyms, acronyms, translations, and embedded edition suffixes are not guessed. Exact PDF bytes remain governed by import-time duplicate rejection, and hashes are never exposed. A probable-duplicate review records same work, related edition, or distinct; it never deletes or merges a book. Relationship and prerequisite lists are paginated.
+
+Create a curriculum triage with a title, 1–25 target topics, optional description/domain/difficulty ceiling, and either a snapshot of the current library or an explicit candidate subset. Only one draft is editable. Starting a replacement explicitly archives that draft when the replacement is successfully created. Whole-library imports/deletions and relevant profile/review changes produce a visible stale state; use **Save and synchronize triage** before confirmation. Applied/archived/invalidated sessions remain read-only history.
+
+The deterministic shortlist labels its exact evidence and never supplies a numeric score or study order. It can return fewer than three books when the recorded evidence is insufficient. You may manually choose another 3–5 ready candidates, including books above the optional ceiling. For every selected book, provide an M5-compatible role, rationale, relevance explanation, optional depth/practice assessment, optional evidence, focus topics for SELECTED, and explicit review confirmation. At least one book must be CORE or SELECTED; LATER is not part of Books Now.
+
+Final confirmation is atomic: it deactivates the old active goal, creates the confirmed M3 goal, creates revision 1 of its reviewed M5 comparison, and marks the triage applied. A conflict leaves all four states unchanged. Active-goal deletion protection remains in force; later deletion of an inactive book removes affected comparison data and invalidates only affected applied triage history.
+
+M5.5 adds `GET /library-intelligence/map`, paginated relationship/prerequisite reads, relation-review `PUT`, and `/curriculum-triages` lifecycle endpoints. After updating from M5, stop the backend and run `python -m alembic upgrade head`; head `0006_library_intelligence` preserves M1–M5 data and files. M5.5 adds no AI, full-PDF analysis, fuzzy/semantic matching, graph, learning-path order, chapters, schedule, or study-plan artifact.

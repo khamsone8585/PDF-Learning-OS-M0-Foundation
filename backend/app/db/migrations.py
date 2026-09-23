@@ -2,7 +2,7 @@ from pathlib import Path
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 
-REVISION = '0005_book_comparisons'
+REVISION = '0006_library_intelligence'
 
 
 def migration_config():

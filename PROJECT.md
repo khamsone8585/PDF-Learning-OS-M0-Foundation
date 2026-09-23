@@ -12,7 +12,7 @@ Core philosophy:
 
 ## Product Loop
 
-`PDF Library → Analyze → Compare → Learning Path → Chapter Study → Recall → Practice → Mastery → Markdown`
+`PDF Library → Map → Curriculum Triage → Compare → Learning Path → Study Plan → Chapter Study → Recall → Practice → Mastery → Markdown`
 
 ## V0.1 Modules
 
@@ -20,7 +20,9 @@ Core philosophy:
 - PDF Processor
 - Book Analyzer
 - Book Comparison
+- Library Intelligence & Curriculum Triage
 - Learning Path
+- 90-Day Study Planner
 - Study Reader
 - Translation / Explanation
 - Active Recall / Quiz

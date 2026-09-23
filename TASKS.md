@@ -32,10 +32,20 @@ Difficulty, prerequisites, topics, strengths, weaknesses, theory/practice orient
 
 Compare overlap, prerequisites, difficulty, coverage, classify book role, and explain rationale.
 
+## M5.5 — Library Intelligence & Curriculum Triage
+**Status:** DONE
+
+Map and triage a 30–100-book candidate library, review deterministic duplicate/prerequisite/overlap evidence, and confirm 3–5 books into the existing M3/M5 contracts.
+
 ## M6 — Learning Path
 **Status:** TODO
 
-Generate dependency-aware stages, selected chapters, skip/reference decisions, mastery evidence, and `STUDY_PLAN.md`.
+Generate dependency-aware stages, selected chapters, skip/reference decisions, and ordering rationale.
+
+## M6.5 — 90-Day Study Planner
+**Status:** TODO
+
+Turn an approved dependency path into a dated 90-day study plan. Markdown rendering remains M11.
 
 ## M7 — Chapter Study Reader
 **Status:** TODO
@@ -627,7 +637,7 @@ Final acceptance:
 - Defects found/fixed during TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
 - Learner data was not read or modified. All test PDFs, databases, extracted artifacts, profiles, and goals were isolated disposable data. No commit or push was performed.
 
-## Active Task
+## Historical M5 task
 
 Task: M5 — Book Comparison
 Milestone: M5
@@ -703,3 +713,57 @@ Final acceptance:
 - All eleven M5 acceptance criteria and FR-016–FR-018 pass. M5 remains deterministic/manual-first and adds no AI provider call, automatic classification, semantic matching, score, RAG, embedding, vector database, dependency order, stage, chapter sequence, learning path, `STUDY_PLAN.md`, or M7+ behavior.
 - Defects found/fixed during formal TEST: none. Production code, migration, dependencies, and tests were unchanged during TEST. Files changed during TEST: `TASKS.md` and `CHANGELOG.md` only.
 - Learner data was not read or modified. All databases, PDFs, profiles, goals, processed artifacts, and comparisons were isolated disposable data. Both test servers and the isolated Chrome tab were stopped/closed. No commit or push was performed.
+
+## Active Task
+
+Task: M5.5 — Library Intelligence & Curriculum Triage
+Milestone: M5.5
+Mode: TEST
+Status: DONE
+Approval: User approved the decision-complete M5.5 plan in this conversation.
+
+Goal: Add a compact deterministic/manual-first intelligence and triage workflow for 30–100 books without weakening M3's confirmed 3–5-book invariant or M5's reviewed comparison contract.
+
+Approved design:
+- Persist one editable curriculum-triage session with 0–many candidate books; retain applied sessions as read-only history.
+- Require 1–25 target topics, with optional target domain and difficulty ceiling. Whole-library scope is a snapshot that requires explicit synchronization after library membership changes.
+- Compute library maps, bibliographic duplicate/edition candidates, exact recorded-topic overlap, explicit prerequisite providers, and a score-free rule-based shortlist on demand from M1 metadata and M4 profiles only.
+- Persist library-wide pair reviews but never auto-delete or merge books.
+- Require explicit confirmation of 3–5 ready books, at least one CORE/SELECTED role, no LATER role, and complete M5-compatible reviewed judgments.
+- Atomically create the new active M3 goal, revision-1 M5 comparison, and applied triage result under the existing shared lock.
+- Add Alembic `0006_library_intelligence`; preserve all M1–M5 rows and files. No AI, PDF-text/TOC analysis, semantic matching, M6 sequencing, schedule, or study-plan artifact.
+
+Acceptance criteria and test scope are the approved plan from this conversation: fresh/repeated/populated-M5 migrations; 30/100-book map behavior; duplicate/edition review; prerequisite and overlap evidence; deterministic shortlist and manual override; staleness/revisions; atomic confirmation/rollback; deletion integrity; accessible frontend workflows; full M1–M5 regression and quality gates.
+
+CODE completion must set Mode CODE / Status READY FOR TEST, record exact gate counts and warnings, leave `CHANGELOG.md` unchanged, and stop before live HTTP/browser certification.
+
+CODE implementation and verification — 2026-09-23:
+- Added FR-048–FR-052 and the revised M5.5/M6/M6.5 roadmap to `PROJECT.md` and `SOFTWARE_REQUIREMENTS.md`; documented architecture, migration, API, matching limits, triage workflow, atomic handoff, deletion behavior, and usage in `ARCHITECTURE.md` and `README.md`. `CHANGELOG.md` remains unchanged pending formal TEST.
+- Extracted M5's canonical JSON, Unicode whitespace/casefold normalization, normalized-key, and set-comparison primitives into `backend/app/services/profile_matching.py`; existing M5 output and regression behavior remain passing.
+- Added Alembic `0006_library_intelligence`, curriculum-triage/relation-review models, strict request and response schemas, thin intelligence/triage routes, application registration, and runtime-head enforcement. Fresh and repeated isolated upgrades reached `0006_library_intelligence (head)`; populated-M5 preservation, disposable downgrade, constraints, single-draft index, cascades, and schema expectations are covered.
+- Added batched library-map facts, private exact-duplicate invariant reporting, exact bibliographic duplicate/edition candidates, recorded-topic redundancy/unique/complementary facts, exact prerequisite providers, persisted sorted-pair learner reviews, stable pagination, and separate per-book relationship counts. Synthetic 30- and 100-book tests verify stable bounded output, no N+1 queries, and record the local 100-book map timing without a flaky threshold.
+- Added persisted triage creation/history/replacement, whole-library and selected candidate scopes, fingerprints, explicit synchronization, revision/input conflicts, deterministic evidence bands and score-free shortlist, partial-evidence behavior, duplicate preference, profile/review/library staleness, and atomic confirmation into a new M3 goal plus revision-1 M5 snapshot. Book deletion preserves the active-goal guard, cleans cascaded reviews/memberships/comparisons, and invalidates only affected applied triage history.
+- Added typed frontend transport/runtime validation and a collapsible Library Intelligence workflow with compact grouped map, search/readiness/domain/topic/difficulty/orientation/processing/candidate filters, profile-readiness queue, paginated duplicate/overlap/prerequisite review, explicit matching limitations, draft replacement/synchronization/read-only history, shortlist/manual override, full M5-compatible judgments, stale/error/busy/status/focus handling, and unknown-outcome reload without mutation replay or draft loss. The library refreshes active-goal state after application and warns about deletion impact.
+- Files added: `backend/app/api/curriculum_triage.py`, `backend/app/api/library_intelligence.py`, `backend/app/models/library_intelligence.py`, `backend/app/schemas/library_intelligence.py`, `backend/app/services/curriculum_triage.py`, `backend/app/services/library_intelligence.py`, `backend/app/services/profile_matching.py`, `backend/migrations/versions/0006_library_intelligence.py`, `backend/tests/test_library_intelligence.py`, `frontend/src/api/libraryIntelligence.ts`, `frontend/src/api/libraryIntelligence.test.ts`, `frontend/src/features/intelligence/LibraryIntelligence.tsx`, and `frontend/src/features/intelligence/LibraryIntelligence.test.tsx`.
+- Existing files updated: `PROJECT.md`, `SOFTWARE_REQUIREMENTS.md`, `ARCHITECTURE.md`, `README.md`, `TASKS.md`, backend migration readiness/application registration/M5 comparison/deletion services and migration regressions, plus frontend library integration and styles. No dependency or lockfile changed.
+- Defects fixed during CODE verification: canonical bibliographic pair output was stabilized; recommendation prerequisite selection was restricted to shortlisted direct books; unreviewed probable duplicates were prevented from being auto-selected together; relationship counts were separated; strict response validation exposed and corrected candidate/map shape differences; frontend native form validation coverage and duplicate checkbox queries were corrected; unknown outcomes now preserve triage editors; and the M1-to-head processing migration regression was updated for the approved M5.5 tables. A full-suite failure from that stale table expectation was rerun successfully.
+- Full backend gate: `.venv/bin/python -m pytest -q` PASS — 163 passed, 0 failed; `.venv/bin/python -m pip check` PASS — no broken requirements. Focused M5.5 suite: 13 passed.
+- Full frontend gate: `npm test -- --run` PASS — 12 files, 76 tests; `npm run lint` PASS; `npm run typecheck` PASS; `npm run build` PASS with Vite 7.3.6 and 42 transformed modules.
+- `git diff --check` PASS. Scope inspection confirms M1–M5 regressions remain passing and no AI/provider, full-PDF/TOC analysis, fuzzy or semantic matcher, RAG, embedding/vector store, graph, M6 dependency order/stage/chapter selection, 90-day schedule, or study-plan artifact was introduced.
+- Known non-failing warnings remain the seven upstream backend notices (Starlette HTTPX deprecation, AnyIO portal alias, and PyMuPDF SWIG deprecations) plus the environment-only unwritable pip-cache notice. No known implementation blocker remains.
+- Formal isolated live HTTP and real-browser certification remain for MODE: TEST. M5.5 is READY FOR TEST, not DONE. No learner data was used, and no commit or push was performed. M6 remains TODO.
+
+Formal TEST certification — 2026-09-23:
+- Result: PASS. Milestone M5.5 / Mode TEST / Status DONE. M0–M5 remain DONE; M6 and M6.5 remain TODO.
+- Migration PASS: fresh and populated-M5 disposable databases upgraded to `0006_library_intelligence (head)`; repeated upgrade was idempotent; existing M1–M5 rows survived unchanged; expected M5.5 tables, checks, cascading foreign keys, and partial single-draft index were present; `PRAGMA foreign_key_check` returned no rows; no M6 schema was introduced.
+- Backend quality gate PASS: 163 passed, 0 failed; `python -m pip check` reported no broken requirements. Library-map, duplicate/edition, exact topic redundancy, prerequisite-provider, triage/shortlist, staleness/conflict, atomic confirmation, rollback, persistence, concurrency, deletion, migration, and M1–M5 regression coverage passed.
+- Frontend quality gate PASS: 12 Vitest files / 76 tests; lint, typecheck, and production build passed with Vite 7.3.6 and 42 transformed modules. `git diff --check` passed.
+- Scale PASS: synthetic 30- and 100-book maps returned every book in stable order with at most three SELECT statements, paginated pair results capped at 25, and bounded pair totals. The isolated 100-book map request measured 0.059439 seconds on the supported local toolchain; the live 32-book map measured 0.010968 seconds. These are observations, not product thresholds; no Redis, worker, graph, vector, or cache infrastructure was required.
+- Isolated live HTTP PASS: imported 32 distinct disposable PDFs and rejected an exact-byte duplicate with 409; recorded 30 ready, one missing-profile, and one missing-topic case; identified probable duplicates, related editions, exact-topic equivalence/complementarity, exact prerequisite providers, and an unresolved prerequisite without exposing hashes or inventing semantic matches. A relation review persisted, while processing and M5 comparison changes correctly did not stale triage.
+- Restart, staleness, and conflicts PASS: persisted map/reviews/goal/comparison/triage data survived backend restart; a relevant profile edit marked the whole-library draft stale; the old token and stale revision were rejected; explicit synchronization advanced the revision; the stale snapshot remained reviewable; invalid all-reference confirmation left the prior active goal unchanged.
+- Atomic application and deletion integrity PASS: exact five-book HTTP confirmation and exact three-book Chrome confirmation each produced a new active M3 goal and revision-1 nonstale M5 comparison. Active-book deletion remained protected; unrelated deletion preserved the comparison; affected inactive comparison snapshots were removed; applied whole-library history was invalidated when appropriate; unrelated books/data remained intact; final foreign-key checks were clean.
+- Google Chrome PASS against isolated disposable data: opened a usable 31-book grouped map; exercised search, readiness, and grouping filters; reviewed a probable duplicate as a related edition without deletion; inspected exact overlap/complementarity and provider/unresolved prerequisite evidence; used the profile-readiness queue; created a deterministic source-labeled shortlist; verified explicit CORE/SELECTED/REFERENCE/LATER presentation; observed profile-change staleness; explicitly synchronized and confirmed three books; reloaded to verify the active goal, applied history, review, and revision-1 M5 snapshot. Native validation preserved the prior goal, keyboard focus order worked, no M6 path/stage/chapter-order/90-day UI appeared, and no application console warning/error occurred. Unrelated Chrome-extension warnings were ignored.
+- TEST defect fixed: the triage UI now states explicitly that CORE, SELECTED, and REFERENCE are included in Books Now while unselected candidates are LATER. Added a focused frontend regression assertion, then reran the complete backend/frontend quality gates successfully.
+- Scope PASS: M5 deterministic comparison and the M3 3–5 active-set invariant remain intact; large candidate membership remains separate. No AI/provider call, full-PDF LLM submission, semantic matcher, autonomous agent, RAG, embedding, vector database, M6 dependency order/stage/chapter sequence, 90-day schedule, `STUDY_PLAN.md`, M7+ behavior, new dependency, commit, or push was introduced.
+- Files changed during TEST: `frontend/src/features/intelligence/LibraryIntelligence.tsx`, `frontend/src/features/intelligence/LibraryIntelligence.test.tsx`, `TASKS.md`, and `CHANGELOG.md`. All databases, PDFs, goals, profiles, comparisons, triages, browser build files, and integration scripts were confined to `/private/tmp`; learner data was not read or modified. Isolated servers and the Chrome tab were stopped/closed.
+- Remaining non-failing warnings: seven upstream backend notices (Starlette HTTPX deprecation, AnyIO portal alias, and PyMuPDF SWIG deprecations), one pytest `record_property`/xUnit2 notice from the explicit timing capture, the environment-only unwritable pip-cache notice, and unrelated Chrome-extension console warnings. No M5.5 blocker remains.

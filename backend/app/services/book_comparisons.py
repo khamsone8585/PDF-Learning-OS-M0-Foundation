@@ -1,6 +1,5 @@
 """Goal-scoped, profile-only comparisons. Never reads PDF content."""
 import hashlib
-import json
 from itertools import combinations
 
 from pydantic import ValidationError
@@ -16,27 +15,10 @@ from app.schemas.book_profile import BookProfileResponse
 from app.services.book_profiles import BookProfileService
 from app.services.learning_goals import utc_now
 from app.services.library_errors import LibraryError, storage_error
+from app.services.profile_matching import canonical_json, keys, normalize, set_comparison
 
 ALGORITHM = 'profile_exact_v1'
 DIFFICULTY = {'beginner': 0, 'intermediate': 1, 'advanced': 2}
-
-
-def canonical_json(value):
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
-
-
-def normalize(value):
-    return ' '.join(value.split()).casefold()
-
-
-def keys(values):
-    return sorted({normalize(value) for value in values if normalize(value)})
-
-
-def set_comparison(left, right):
-    left, right = set(left), set(right)
-    return {'shared': sorted(left & right), 'left_only': sorted(left - right),
-            'right_only': sorted(right - left)}
 
 
 def compare(goal, books):
